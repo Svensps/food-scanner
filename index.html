@@ -557,7 +557,14 @@ function renderProduct(){
       <p style="color:var(--muted);font-size:12.5px;padding:8px 0">Обычный штрихкод не содержит дату — введи её с упаковки (или отсканируй QR с датой):</p>
       <input type="date" id="expInput" value="${esc(exp)}">
     </details>
-    <p class="fineprint">Данные: <a href="https://world.openfoodfacts.org/product/${esc(b)}" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) · обновлено ${upd}. Оценка информационная, не медицинская рекомендация.</p>
+       <details><summary>🛒 Магазины России — фото, состав и цена</summary>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding-top:10px">
+        <a class="chip" style="text-decoration:none;color:var(--text)" target="_blank" rel="noopener" href="https://yandex.ru/images/search?text=${encodeURIComponent((p.product_name_ru||p.product_name||'')+' '+b)}">🖼 Фото товара</a>
+        <a class="chip" style="text-decoration:none;color:var(--text)" target="_blank" rel="noopener" href="https://yandex.ru/search/?text=${encodeURIComponent((p.product_name_ru||p.product_name||'')+' '+b+' купить')}">🌍 Все магазины</a>
+        ${[['Пятёрочка','5ka.ru'],['Перекрёсток','perekrestok.ru'],['Магнит','magnit.ru'],['Лента','lenta.com'],['Ашан','auchan.ru'],['ВкусВилл','vkusvill.ru'],['METRO','metro-cc.ru'],['О’КЕЙ','okeydostavka.ru'],['Азбука Вкуса','av.ru'],['Красное&Белое','krasnoeibeloe.ru'],['Fix Price','fix-price.com'],['Дикси','dixy.ru'],['Чижик','chizhik.club'],['SPAR','spar.ru'],['Монетка','monetka.ru'],['Мария-Ра','maria-ra.ru']].map(([n,d])=>`<a class="chip" style="text-decoration:none;color:var(--text)" target="_blank" rel="noopener" href="https://yandex.ru/search/?text=${encodeURIComponent('site:'+d+' '+(p.product_name_ru||p.product_name||b))}">${n} ↗</a>`).join('')}
+      </div>
+      <p class="fineprint" style="margin:10px 0 0">Откроется поиск по сайту магазина: там фото, описание, состав и цена твоего региона. Данные магазинов защищены от автоматического сбора, поэтому показываем официальные страницы, а не копируем их.</p>
+    </details> <p class="fineprint">Данные: <a href="https://world.openfoodfacts.org/product/${esc(b)}" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) · обновлено ${upd}. Оценка информационная, не медицинская рекомендация.</p>
   </div>`;
   $('skeleton').classList.add('hidden');c.classList.remove('hidden');
   // Анимация кольца + счётчик
