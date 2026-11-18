@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101418">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Food Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#16181d;--muted:#6b7280;--line:#e7e9ee;--accent:#16181d;--r:20px;--shadow:0 6px 24px rgba(20,24,32,.08)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1216;--card:#181d24;--text:#eef1f5;--muted:#98a2b3;--line:#242b35;--accent:#eef1f5;--shadow:0 6px 24px rgba(0,0,0,.35)}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,"Segoe UI",Roboto,Inter,sans-serif;background:var(--bg);color:var(--text);padding-bottom:84px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 18px;font-weight:800;font-size:19px;letter-spacing:-.3px}
+main{max-width:560px;margin:0 auto;padding:0 14px}
+.screen{display:none}.screen.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px}
+.btn{background:var(--accent);color:var(--bg);padding:12px 18px;font-weight:700;width:100%}
+.btn.ghost{background:transparent;color:var(--text);border:1.5px solid var(--line)}
+input[type=text],input[type=date],input[type=search]{width:100%;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font:inherit}
+#reader{border:0!important;border-radius:var(--r);overflow:hidden;background:#000;min-height:60px}
+#reader video{border-radius:var(--r)}
+#reader img[alt="Info icon"]{display:none}
+#reader__dashboard_section_swaplink{color:var(--muted);font-size:13px}
+#reader__dashboard{padding:8px!important;color:var(--muted)}
+.scan-tools{display:flex;gap:10px;margin:12px 0}
+.scan-tools button{flex:0 0 56px;background:var(--card);box-shadow:var(--shadow);font-size:20px;padding:10px}
+#manualForm{display:flex;gap:8px;flex:1}
+#manualForm .btn{width:auto;padding:12px 16px}
+.recent{display:flex;gap:8px;overflow-x:auto;margin:12px 0;padding-bottom:4px}
+.chip{background:var(--card);border-radius:999px;padding:8px 14px;font-size:13px;white-space:nowrap;box-shadow:var(--shadow);display:flex;align-items:center;gap:7px}
+.dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px}
+.fineprint{color:var(--muted);font-size:11.5px;line-height:1.5;margin:14px 4px}
+.fineprint a{color:var(--muted)}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+nav button{flex:1;background:none;color:var(--muted);font-size:12px;font-weight:600;padding:6px;display:flex;flex-direction:column;gap:3px;align-items:center}
+nav button span{font-size:21px}
+nav button.on{color:var(--text)}
+.ring-wrap{display:flex;flex-direction:column;align-items:center;padding:10px 0 4px}
+.ring-box{position:relative;width:180px;height:180px}
+.ring-box svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--line);stroke-width:13}
+.ring-fg{fill:none;stroke-width:13;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.22,.8,.3,1)}
+.ring-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-num b{font-size:44px;letter-spacing:-2px}
+.ring-num i{font-style:normal;color:var(--muted);font-size:12px}
+.verdict{margin:10px auto 0;padding:10px 20px;border-radius:999px;font-weight:800;font-size:15px;display:inline-flex;gap:8px;align-items:center}
+.prod-head{display:flex;gap:14px;align-items:center;margin-bottom:6px}
+.prod-head img{width:72px;height:72px;object-fit:contain;border-radius:14px;background:#fff;border:1px solid var(--line)}
+.prod-head h2{font-size:18px;line-height:1.25;letter-spacing:-.3px}
+.prod-head p{color:var(--muted);font-size:13px;margin-top:3px}
+.banner{border-radius:14px;padding:12px 14px;font-size:13.5px;font-weight:600;margin:10px 0;line-height:1.4}
+.banner.red{background:#E53935;color:#fff}
+.banner.warn{background:#FB8C00;color:#fff}
+.banner.info{background:var(--bg);color:var(--muted);border:1px solid var(--line);font-weight:500}
+details{border-top:1px solid var(--line);padding:13px 2px}
+summary{font-weight:700;font-size:14.5px;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+summary::after{content:"▾";color:var(--muted)}
+.reason{display:flex;gap:9px;padding:8px 0;font-size:13.5px;line-height:1.45;border-bottom:1px dashed var(--line)}
+.reason:last-child{border:0}
+.reason .ic{flex:0 0 22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.reason a{color:var(--muted);font-size:12px}
+.bar-row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);padding:5px 0}
+.bar-row .lbl{flex:0 0 118px}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px}
+.ing{display:flex;flex-wrap:wrap;gap:7px;padding-top:10px}
+.ing span{border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+td{padding:7px 2px;border-bottom:1px dashed var(--line)}
+td:last-child{text-align:right;font-weight:600}
+.alt{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.alt img{width:44px;height:44px;object-fit:contain;border-radius:10px;background:#fff;border:1px solid var(--line)}
+.alt .nm{flex:1;font-size:13px;line-height:1.3}
+.score-pill{border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;color:#fff}
+.hist-item{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:9px;box-shadow:var(--shadow);cursor:pointer}
+.hist-item .nm{flex:1;min-width:0}
+.hist-item .nm b{font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item .nm i{font-style:normal;color:var(--muted);font-size:12px}
+.hist-item .del{color:var(--muted);background:none;font-size:16px;padding:6px}
+.filters{display:flex;gap:7px;overflow-x:auto;margin:10px 0 14px;padding-bottom:2px}
+.filters button{background:var(--card);border:1.5px solid var(--line);color:var(--muted);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.filters button.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.set-row{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-bottom:1px dashed var(--line);font-size:14px}
+.set-row input{width:20px;height:20px;accent-color:#E53935}
+.skel{border-radius:var(--r);background:linear-gradient(100deg,var(--card) 40%,var(--line) 50%,var(--card) 60%);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+#sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);display:flex;align-items:flex-end}
+#sheet .inner{background:var(--card);width:100%;max-width:560px;margin:0 auto;border-radius:24px 24px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+#toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:30;max-width:90%;text-align:center}
+.hidden{display:none!important}
+h3.sec{font-size:15px;margin:16px 4px 10px}
+a{color:inherit}
+</style>
+</head>
+<body>
+<header>🥗 Food Scanner</header>
+<main>
+
+<!-- ЭКРАН: СКАНЕР -->
+<section id="scr-scan" class="screen active">
+  <div id="reader"></div>
+  <div id="cam-error" class="card hidden" style="text-align:center">
+    <p style="margin-bottom:12px;color:var(--muted)">Камера недоступна. Разреши доступ в браузере или введи штрихкод вручную.</p>
+    <button class="btn" id="camRetry">Включить камеру</button>
+  </div>
+  <div class="scan-tools">
+    <button id="torchBtn" class="hidden" title="Фонарик">🔦</button>
+    <form id="manualForm">
+      <input type="text" id="manualInput" inputmode="numeric" placeholder="Штрихкод вручную, напр. 3017620422003">
+      <button class="btn" type="submit">Найти</button>
+    </form>
+  </div>
+  <div class="recent" id="recent"></div>
+  <p class="fineprint">Наведи камеру на штрихкод (EAN/UPC) или QR. Данные: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (лицензия ODbL). Оценка носит информационный характер и не является медицинской рекомендацией.</p>
+</section>
+
+<!-- ЭКРАН: КАРТОЧКА -->
+<section id="scr-product" class="screen">
+  <button class="btn ghost" id="backBtn" style="width:auto;padding:9px 16px;margin-bottom:12px">← К сканеру</button>
+  <div id="skeleton">
+    <div class="skel" style="height:96px;margin-bottom:14px"></div>
+    <div class="skel" style="height:260px;margin-bottom:14px"></div>
+    <div class="skel" style="height:140px"></div>
+  </div>
+  <div id="productCard" class="hidden"></div>
+</section>
+
+<!-- ЭКРАН: ИСТОРИЯ -->
+<section id="scr-history" class="screen">
+  <input type="search" id="histSearch" placeholder="Поиск по названию или штрихкоду">
+  <div class="filters" id="histFilters">
+    <button data-f="all" class="on">Все</button>
+    <button data-f="buy">🟢 Покупать</button>
+    <button data-f="neutral">🟠 Умеренно</button>
+    <button data-f="avoid">🔴 Игнорировать</button>
+    <button data-f="fav">⭐ Избранное</button>
+  </div>
+  <div id="histList"></div>
+</section>
+
+<!-- ЭКРАН: НАСТРОЙКИ -->
+<section id="scr-settings" class="screen">
+  <div class="card">
+    <h3 class="sec" style="margin-top:0">⚠️ Мои аллергии и ограничения</h3>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Если продукт содержит отмеченное — покажем персональный красный баннер поверх оценки.</p>
+    <div id="allergList"></div>
+  </div>
+  <div class="card">
+    <h3 class="sec" style="margin-top:0">Данные</h3>
+    <button class="btn ghost" id="clearHist" style="margin-bottom:9px">Очистить историю</button>
+    <button class="btn ghost" id="clearCache">Очистить офлайн-кэш</button>
+  </div>
+  <div class="card">
+    <h3 class="sec" style="margin-top:0">О приложении</h3>
+    <p class="fineprint" style="margin:0">Food Scanner MVP v1.0 · Скоринг: добавки 40% (реестры EFSA / ТР ТС 029/2012), переработка NOVA 20%, нутриенты 25% (пороги ВОЗ), натуральность 15% + прозрачные критические правила. ГМО — информационная плашка, на балл не влияет (позиция EFSA/ВОЗ).<br><br>Источник данных продуктов: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>, лицензия ODbL. Оценка информационная, не медицинская рекомендация.</p>
+  </div>
+</section>
+</main>
+
+<nav>
+  <button data-scr="scan" class="on"><span>📷</span>Сканер</button>
+  <button data-scr="history"><span>🕘</span>История</button>
+  <button data-scr="settings"><span>⚙️</span>Настройки</button>
+</nav>
+
+<div id="sheet" class="hidden"><div class="inner" id="sheetInner"></div></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+'use strict';
+/* ================= УТИЛИТЫ ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const clamp=(v,a=0,b=100)=>Math.min(b,Math.max(a,v));
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.add('hidden'),2600)}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.05;o.start();o.stop(c.currentTime+.12)}catch(e){}}
+
+/* ================= СЛОВАРЬ ДОБАВОК (EFSA / FDA / ТР ТС 029/2012) =================
+   s: safe | limited | controversial | banned. Обновляемый модуль. */
+const SRC_EFSA='https://www.efsa.europa.eu/en/topics/topic/food-additives';
+const ADD={
+e100:{n:'Куркумин',s:'safe',r:'Натуральный краситель из куркумы.'},
+e101:{n:'Рибофлавин (B2)',s:'safe',r:'Витамин, безопасен.'},
+e102:{n:'Тартразин',s:'controversial',r:'Азокраситель: риск гиперактивности детей и аллергии; предупреждение на этикетке ЕС.'},
+e104:{n:'Жёлтый хинолиновый',s:'controversial',r:'Азокраситель, ADI снижен EFSA.'},
+e110:{n:'Жёлтый «солнечный закат»',s:'controversial',r:'Связан с гиперактивностью детей (Southampton study).'},
+e120:{n:'Кармин',s:'limited',r:'Натуральный, но сильный аллерген; не веганский.'},
+e122:{n:'Азорубин',s:'controversial',r:'Азокраситель «саутгемптонской шестёрки», ограничен.'},
+e124:{n:'Понсо 4R',s:'controversial',r:'ADI снижен EFSA; запрещён в США.'},
+e129:{n:'Красный очаровательный AC',s:'controversial',r:'Азокраситель, предупреждение о гиперактивности в ЕС.'},
+e133:{n:'Синий блестящий FCF',s:'limited',r:'Синтетический краситель с установленным ADI.'},
+e150a:{n:'Сахарный колер I',s:'safe',r:'Простая карамель, безопасна.'},
+e150c:{n:'Сахарный колер III',s:'limited',r:'Следы 4-MEI; установлен ADI.'},
+e150d:{n:'Сахарный колер IV',s:'limited',r:'Карамельный колер (кола); ADI установлен, умеренность.'},
+e160a:{n:'Каротины',s:'safe',r:'Провитамин A из пищевых источников.'},
+e162:{n:'Свекольный красный',s:'safe',r:'Натуральный краситель из свёклы.'},
+e171:{n:'Диоксид титана',s:'banned',r:'ЗАПРЕЩЁН в ЕС с 2022: EFSA не исключила генотоксичность.',src:'https://eur-lex.europa.eu/eli/reg/2022/63/oj'},
+e200:{n:'Сорбиновая кислота',s:'safe',r:'Консервант с высоким профилем безопасности.'},
+e202:{n:'Сорбат калия',s:'safe',r:'Один из самых безопасных консервантов.'},
+e211:{n:'Бензоат натрия',s:'controversial',r:'С витамином C может образовывать бензол; данные о гиперактивности.'},
+e220:{n:'Диоксид серы',s:'limited',r:'Сульфит: аллерген, разрушает витамин B1.'},
+e223:{n:'Пиросульфит натрия',s:'limited',r:'Сульфит, аллерген, строгие нормы.'},
+e250:{n:'Нитрит натрия',s:'controversial',r:'В мясе образует нитрозамины (канцерогены, IARC); строгий ADI.'},
+e251:{n:'Нитрат натрия',s:'controversial',r:'Превращается в нитрит; риски нитрозаминов.'},
+e260:{n:'Уксусная кислота',s:'safe',r:'Обычный уксус.'},
+e270:{n:'Молочная кислота',s:'safe',r:'Естественный продукт ферментации.'},
+e280:{n:'Пропионовая кислота',s:'safe',r:'Консервант хлеба, безопасен в нормативных дозах.'},
+e300:{n:'Аскорбиновая кислота (C)',s:'safe',r:'Витамин C, антиоксидант.'},
+e306:{n:'Токоферолы (E)',s:'safe',r:'Натуральный антиоксидант.'},
+e322:{n:'Лецитины',s:'safe',r:'Эмульгатор из сои/подсолнечника, безопасен.'},
+e330:{n:'Лимонная кислота',s:'safe',r:'Естественная кислота цитрусовых.'},
+e331:{n:'Цитраты натрия',s:'safe',r:'Соли лимонной кислоты.'},
+e338:{n:'Ортофосфорная кислота',s:'limited',r:'Избыток фосфатов нагружает почки; типична для колы.'},
+e407:{n:'Каррагинан',s:'limited',r:'Временный ADI EFSA; вопросы к деградированным формам.'},
+e410:{n:'Камедь рожкового дерева',s:'safe',r:'Натуральный загуститель.'},
+e412:{n:'Гуаровая камедь',s:'safe',r:'Натуральный загуститель.'},
+e415:{n:'Ксантановая камедь',s:'safe',r:'Загуститель ферментационного происхождения.'},
+e420:{n:'Сорбит',s:'limited',r:'Слабительный эффект при больших дозах.'},
+e440:{n:'Пектины',s:'safe',r:'Натуральная клетчатка из фруктов.'},
+e450:{n:'Пирофосфаты',s:'limited',r:'Групповой ADI EFSA 2019; избыток вреден для почек и костей.'},
+e471:{n:'Моно- и диглицериды',s:'limited',r:'Маркер ультрапереработки; возможны трансжиры.'},
+e476:{n:'PGPR',s:'safe',r:'Эмульгатор шоколада, профиль безопасности приемлемый.'},
+e500:{n:'Карбонаты натрия (сода)',s:'safe',r:'Пищевая сода.'},
+e501:{n:'Карбонаты калия',s:'safe',r:'Разрыхлитель, безопасен.'},
+e503:{n:'Карбонаты аммония',s:'safe',r:'Разрыхлитель для печенья, безопасен.'},
+e621:{n:'Глутамат натрия',s:'limited',r:'ADI 30 мг/кг (EFSA); маркер ультрапереработки.'},
+e627:{n:'Гуанилат натрия',s:'limited',r:'Усилитель вкуса, обычно с E621; осторожно при подагре.'},
+e631:{n:'Инозинат натрия',s:'limited',r:'Усилитель вкуса, маркер УПП.'},
+e900:{n:'Диметилполисилоксан',s:'safe',r:'Пеногаситель, инертен.'},
+e950:{n:'Ацесульфам K',s:'limited',r:'Сладитель; данных о долгосрочном влиянии меньше.'},
+e951:{n:'Аспартам',s:'controversial',r:'IARC 2023: «возможно канцерогенен» (2B); противопоказан при фенилкетонурии.',src:'https://www.iarc.who.int/wp-content/uploads/2023/07/pr339_E.pdf'},
+e955:{n:'Сукралоза',s:'limited',r:'Разрешена; новые данные о метаболите требуют наблюдения.'},
+e960:{n:'Стевиолгликозиды',s:'safe',r:'Натуральный сладитель из стевии.'},
+e965:{n:'Мальтит',s:'limited',r:'Полиол: слабительный эффект, повышает гликемию.'},
+e1442:{n:'Модифицированный крахмал',s:'limited',r:'Маркер ультрапереработки.'}
+};
+const ST_META={safe:{t:'Безопасна',c:'#2E7D32'},limited:{t:'Ограничения',c:'#FB8C00'},controversial:{t:'Спорная',c:'#F4511E'},banned:{t:'Запрещена в ЕС',c:'#E53935'}};
+function lookupAdd(code){ // e322i → e322 (суффиксы-подвиды)
+  code=code.toLowerCase();
+  if(ADD[code])return{code,...ADD[code]};
+  const base=code.replace(/[a-z]$/,'');
+  if(ADD[base])return{code:base,...ADD[base]};
+  return null;
+}
+
+/* ================= КОНФИГ СКОРИНГА v1.1 (веса этапа 1 + критические правила) ================= */
+const CFG={
+  w:{add:.4,proc:.2,nut:.25,nat:.15},
+  pen:{safe:0,limited:12,controversial:25,banned:100},
+  nova:{1:100,2:75,3:45,4:10},
+  organic:['en:organic','en:eu-organic','en:usda-organic','en:ab-agriculture-biologique'],
+  gmo:['soy','soya','corn','maize','canola','rapeseed','соя','соев','кукуруз','рапс'],
+  critCap:30, nova4Cap:65, bannedCap:20
+};
+
+/* Движок: чистая функция, порт протестированной логики */
+function scoreProduct(p){
+  const n=p.nutriments||{}, cats=p.categories_tags||[], ings=p.ingredients||[];
+  const bev=cats.some(c=>c.includes('beverage')||c.includes('drinks'));
+  const sugars=n['sugars_100g'],salt=n['salt_100g'],sat=n['saturated-fat_100g'],prot=n['proteins_100g'],fib=n['fiber_100g'];
+  const add=[...(p.additives_tags||[])];
+  ings.forEach(i=>{const id=i.id||'';if(id.startsWith('en:e')&&!add.includes(id))add.push(id)});
+  const art=ings.some(i=>['en:vanillin','en:ethyl-vanillin'].includes(i.id));
+  const org=(p.labels_tags||[]).some(l=>CFG.organic.includes(l));
+  const cnt=ings.length||null;
+  const reasons=[];const R=(ic,text,src)=>reasons.push({ic,text,src});
+
+  // Фактор 1: добавки
+  let a=100,banned=false;const seen=new Set();
+  for(const t of add){
+    const code=t.split(':').pop().toLowerCase();if(seen.has(code))continue;seen.add(code);
+    const info=lookupAdd(code);
+    if(!info){a-=5;R('i',`${code.toUpperCase()} нет в словаре — осторожная оценка (−5)`);continue}
+    const pen=CFG.pen[info.s];
+    if(info.s==='banned')banned=true;
+    if(pen>0){a-=pen;R('-',`${info.code.toUpperCase()} — ${info.n}: ${info.r}`,info.src||SRC_EFSA)}
+    else R('+',`${info.code.toUpperCase()} (${info.n}) — безопасная добавка`,info.src||SRC_EFSA);
+  }
+  a=clamp(a);
+
+  // Фактор 2: NOVA
+  const nova=p.nova_group,proc=CFG.nova[nova]??60;
+  if(nova)R(nova<=2?'+':'-',nova===1?'Минимально обработанный продукт (NOVA 1)':nova===4?'Ультрапереработанный продукт (NOVA 4)':`Степень переработки: NOVA ${nova}`);
+
+  // Фактор 3: нутриенты (пороги ВОЗ; для напитков — жёстче по сахару)
+  const sm=bev?2.5:5, sh=bev?8:22.5;
+  let nu=100;
+  const pen3=(v,mid,hi,name)=>{if(v==null)return;
+    if(v>=hi){nu-=30;R('-',`Высокое содержание: ${name} (${v} г/100 г)`)}
+    else if(v>=mid){nu-=12;R('-',`Умеренное содержание: ${name} (${v} г/100 г)`)}};
+  pen3(sugars,sm,sh,'сахара');pen3(salt,.3,1.5,'соль');pen3(sat,1,5,'насыщенные жиры');
+  if((prot??0)>=8){nu+=8;R('+',`Хороший источник белка (${prot} г/100 г)`)}
+  if((fib??0)>=3){nu+=8;R('+',`Богат клетчаткой (${fib} г/100 г)`)}
+  nu=clamp(nu);
+
+  // Фактор 4: натуральность
+  let na=60;
+  if(org){na+=30;R('+','Подтверждённый органик-сертификат')}
+  if(cnt!=null){if(cnt<=5){na+=20;R('+',`Короткий понятный состав (${cnt} ингр.)`)}else if(cnt>15){na-=25;R('-',`Очень длинный состав (${cnt} ингр.)`)}}
+  if(art){na-=20;R('-','Искусственные ароматизаторы (ванилин/этилванилин)')}
+  na=clamp(na);
+
+  let total=Math.round(a*CFG.w.add+proc*CFG.w.proc+nu*CFG.w.nut+na*CFG.w.nat);
+
+  // Критические правила (прозрачные потолки)
+  const cap=(why)=>{if(total>CFG.critCap){total=CFG.critCap}R('-',`Критическое правило: ${why} → максимум ${CFG.critCap} баллов`)};
+  if(sugars!=null&&sugars>=40)cap('сахар ≥ 40 г/100 г');
+  if(salt!=null&&salt>=3)cap('соль ≥ 3 г/100 г');
+  if(sat!=null&&sat>=15)cap('насыщенные жиры ≥ 15 г/100 г');
+  if(sugars!=null&&sat!=null&&sugars>=30&&sat>=5)cap('сочетание «сахар ≥30 + жир ≥5» (сахарно-жировая бомба)');
+  if(bev&&sugars!=null&&sugars>=10)cap('сладкий напиток ≥ 10 г сахара на 100 мл');
+  if(nova===4&&total>CFG.nova4Cap){total=CFG.nova4Cap;R('-','Ультрапереработка (NOVA 4) не может быть «рекомендовано»')}
+  if(banned&&total>CFG.bannedCap){total=CFG.bannedCap;R('-','Запрещённая в ЕС добавка → автоматический красный')}
+
+  total=clamp(total);
+  const verdict=total>=75?'buy':total>=40?'neutral':'avoid';
+  // ГМО: только инфо-плашка (на балл не влияет)
+  const txt=(p.ingredients_text_ru||p.ingredients_text||'').toLowerCase();
+  const gmo=!org&&CFG.gmo.some(m=>txt.includes(m));
+  return{score:total,verdict,reasons,gmo,bev,breakdown:{additives:a,processing:proc,nutrition:nu,naturalness:na}};
+}
+
+/* ================= ЦВЕТОВАЯ СИСТЕМА: OKLCH-градиент (проверен: стопы точные, монотонный) ================= */
+const s2l=c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4;
+const l2s=c=>c<=.0031308?12.92*c:1.055*c**(1/2.4)-.055;
+function hexToOklch(hex){
+  const v=parseInt(hex.slice(1),16),[r,g,b]=[(v>>16)&255,(v>>8)&255,v&255].map(x=>s2l(x/255));
+  const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),
+        m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),
+        s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+  const L=.2104542553*l+.793617785*m-.0040720468*s,
+        a=1.9779984951*l-2.428592205*m+.4505937099*s,
+        bb=.0259040371*l+.7827717662*m-.808675766*s;
+  let H=Math.atan2(bb,a)*180/Math.PI;if(H<0)H+=360;
+  return[L,Math.hypot(a,bb),H];
+}
+function oklchToHex(L,C,H){
+  const hr=H*Math.PI/180;
+  const conv=(L,a,b)=>{const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;
+    return[4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]};
+  let rgb=conv(L,C*Math.cos(hr),C*Math.sin(hr));
+  const ok=v=>v.every(x=>x>=-.001&&x<=1.001);
+  if(!ok(rgb)){let lo=0,hi=C;for(let i=0;i<20;i++){const mid=(lo+hi)/2,out=conv(L,mid*Math.cos(hr),mid*Math.sin(hr));if(ok(out)){lo=mid;rgb=out}else hi=mid}}
+  return'#'+rgb.map(x=>Math.round(clamp(l2s(x),0,1)*255).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+const STOPS=[[0,'#E53935'],[20,'#F4511E'],[40,'#FB8C00'],[57,'#FFA726'],[74,'#C0CA33'],[85,'#7CB342'],[100,'#2E7D32']];
+const SO=STOPS.map(([s,h])=>[s,hexToOklch(h)]);
+const lerpHue=(h1,h2,t)=>{let d=h2-h1;if(d>180)d-=360;if(d<-180)d+=360;return(h1+d*t+360)%360};
+function getColorForScore(score){
+  const s=clamp(score);
+  for(const[sc,h]of STOPS)if(s===sc)return h;
+  let i=0;while(i<SO.length-2&&s>SO[i+1][0])i++;
+  const[s1,[L1,C1,H1]]=SO[i],[s2,[L2,C2,H2]]=SO[i+1],t=(s-s1)/(s2-s1);
+  return oklchToHex(L1+(L2-L1)*t,C1+(C2-C1)*t,lerpHue(H1,H2,t));
+}
+function getTint(score){const[L,C,H]=hexToOklch(getColorForScore(score));
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  return oklchToHex(dark?.25:.965,C*(dark?.22:.10),H)}
+function contrastText(hex){const v=parseInt(hex.slice(1),16);
+  const lin=[(v>>16)&255,(v>>8)&255,v&255].map(x=>{const c=x/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4});
+  return(.2126*lin[0]+.7152*lin[1]+.0722*lin[2])>.35?'#000':'#fff'}
+const vIcon=s=>s>=75?'✔':s>=40?'~':'✖';
+const vText={buy:['Отличный выбор!','Рекомендуем к покупке'],neutral:['Есть нюансы','Можно, но умеренно'],avoid:['Лучше проигнорировать','Не рекомендуем'],expired:['ПРОСРОЧЕН','Не покупать и не употреблять']};
+
+/* ================= DATA LAYER: OFF API + кэш + retry/backoff ================= */
+const FIELDS='product_name,product_name_ru,brands,image_front_url,image_front_small_url,ingredients_text,ingredients_text_ru,ingredients,additives_tags,nova_group,nutriments,labels_tags,allergens_tags,categories_tags,last_modified_t';
+const TTL=7*864e5;
+function cacheGet(b){return store.get('fs_cache',{})[b]}
+function cacheSet(b,d){const c=store.get('fs_cache',{});c[b]={t:Date.now(),d};
+  const keys=Object.keys(c);if(keys.length>150){keys.sort((x,y)=>c[x].t-c[y].t).slice(0,keys.length-150).forEach(k=>delete c[k])}
+  store.set('fs_cache',c)}
+async function fetchJSON(url,tries=3){
+  for(let i=0;i<tries;i++){
+    try{
+      const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),12000);
+      const r=await fetch(url,{signal:ctrl.signal});clearTimeout(to);
+      if(r.status===429||r.status===503){await new Promise(res=>setTimeout(res,1200*(i+1)));continue}
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){if(i===tries-1)throw e;await new Promise(res=>setTimeout(res,900*(i+1)))}
+  }
+  throw new Error('rate-limit');
+}
+async function apiGetProduct(b){
+  const j=await fetchJSON(`https://world.openfoodfacts.org/api/v2/product/${b}?fields=${FIELDS}`);
+  if(!j.product||!(j.product.product_name||j.product.product_name_ru))throw new Error('not-found');
+  return j.product;
+}
+
+/* ================= СОСТОЯНИЕ ================= */
+let current=null,histFilter='all',scanner=null,scanning=false,busy=false,torchOn=false;
+const getHist=()=>store.get('fs_hist',[]);
+const getFavs=()=>store.get('fs_favs',[]);
+const getAllerg=()=>store.get('fs_allerg',[]);
+const ALLERGENS=[['en:milk','Молоко / лактоза'],['en:gluten','Глютен'],['en:eggs','Яйца'],['en:nuts','Орехи'],['en:peanuts','Арахис'],['en:soybeans','Соя'],['en:fish','Рыба']];
+function pushHist(b,p,s){
+  let h=getHist().filter(x=>x.b!==b);
+  h.unshift({b,name:p.product_name_ru||p.product_name||'Без названия',brand:p.brands||'',score:s.score,verdict:s.verdict,img:p.image_front_small_url||'',ts:Date.now()});
+  store.set('fs_hist',h.slice(0,100));renderRecent();
+}
+
+/* ================= НАВИГАЦИЯ ================= */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('scr-'+id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.scr===id));
+  if(id==='scan'){busy=false;startScanner()}else stopScanner();
+  if(id==='history')renderHist();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showScreen(b.dataset.scr));
+$('backBtn').onclick=()=>showScreen('scan');
+
+/* ================= СКАНЕР ================= */
+async function startScanner(){
+  if(scanning||typeof Html5Qrcode==='undefined'){if(typeof Html5Qrcode==='undefined')$('cam-error').classList.remove('hidden');return}
+  try{
+    if(!scanner)scanner=new Html5Qrcode('reader',{verbose:false,
+      formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.QR_CODE],
+      experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
+    await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:160}},onScan,()=>{});
+    scanning=true;$('cam-error').classList.add('hidden');
+    try{const caps=scanner.getRunningTrackCapabilities();if(caps&&caps.torch)$('torchBtn').classList.remove('hidden')}catch(e){}
+  }catch(e){$('cam-error').classList.remove('hidden')}
+}
+async function stopScanner(){
+  $('torchBtn').classList.add('hidden');torchOn=false;
+  if(scanner&&scanning){try{await scanner.stop()}catch(e){}scanning=false}
+}
+function onScan(text){
+  if(busy)return;busy=true;
+  const m=String(text).match(/\d{8,14}/); // из QR-URL тоже достаём GTIN
+  if(!m){busy=false;return}
+  navigator.vibrate&&navigator.vibrate(80);beep();
+  loadProduct(m[0]);
+}
+$('camRetry').onclick=()=>startScanner();
+$('torchBtn').onclick=async()=>{try{torchOn=!torchOn;await scanner.applyVideoConstraints({advanced:[{torch:torchOn}]})}catch(e){toast('Фонарик не поддерживается')}};
+$('manualForm').onsubmit=e=>{e.preventDefault();
+  const m=$('manualInput').value.match(/\d{8,14}/);
+  if(!m){toast('Введите 8–14 цифр штрихкода');return}
+  $('manualInput').value='';loadProduct(m[0]);
+};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopScanner();else if($('scr-scan').classList.contains('active'))startScanner()});
+
+/* ================= ЗАГРУЗКА И КАРТОЧКА ================= */
+async function loadProduct(b){
+  showScreen('product');
+  $('skeleton').classList.remove('hidden');$('productCard').classList.add('hidden');
+  let p=null,offline=false,cached=cacheGet(b);
+  if(cached&&Date.now()-cached.t<TTL)p=cached.d;
+  else{
+    try{p=await apiGetProduct(b);cacheSet(b,p)}
+    catch(e){
+      if(cached){p=cached.d;offline=true}
+      else{renderNotFound(b,e.message);return}
+    }
+  }
+  const scored=scoreProduct(p);
+  current={b,p,scored,offline,cachedT:cached?cached.t:Date.now()};
+  pushHist(b,p,scored);renderProduct();
+}
+function renderNotFound(b,err){
+  $('skeleton').classList.add('hidden');
+  const c=$('productCard');c.classList.remove('hidden');
+  c.innerHTML=`<div class="card" style="text-align:center">
+    <div style="font-size:44px">🔍</div>
+    <h2 style="margin:10px 0 6px">Продукт не найден</h2>
+    <p style="color:var(--muted);font-size:13.5px;line-height:1.5">Штрихкод ${esc(b)} ${err==='not-found'?'отсутствует в базе Open Food Facts':'— ошибка сети, и офлайн-копии нет'}.</p>
+    <a class="btn" style="display:block;text-decoration:none;margin-top:14px" target="_blank" rel="noopener" href="https://world.openfoodfacts.org/product/${esc(b)}">Добавить продукт в Open Food Facts</a>
+  </div>`;
+}
+function renderProduct(){
+  const{b,p,scored,offline,cachedT}=current;
+  const{name,brand}={name:p.product_name_ru||p.product_name||'Без названия',brand:p.brands||''};
+  const exp=store.get('fs_exp',{})[b]||'';
+  let verdict=scored.verdict,shownScore=scored.score,expBanner='';
+  if(exp){
+    const days=(new Date(exp)-Date.now())/864e5;
+    if(days<0){verdict='expired';shownScore=0;expBanner=`<div class="banner red">⛔ ПРОСРОЧЕН (годен до ${esc(exp)}). Не покупать и не употреблять!</div>`}
+    else if(days<3)expBanner=`<div class="banner warn">⏳ Срок годности истекает менее чем через 3 дня (${esc(exp)})</div>`;
+  }
+  const color=getColorForScore(shownScore),tc=contrastText(color);
+  const[vt,vs]=vText[verdict];
+  const C=490.09;
+  // Персональные аллергены
+  const my=getAllerg(),tags=p.allergens_tags||[];
+  const hit=my.filter(a=>tags.includes(a)).map(a=>(ALLERGENS.find(x=>x[0]===a)||[])[1]);
+  const allergBanner=hit.length?`<div class="banner red">⛔ Вам нельзя: ${esc(hit.join(', '))} (ваша аллергия/ограничение)</div>`:'';
+  const gmoPlate=scored.gmo?`<div class="banner info">🧬 Может содержать ГМО-ингредиенты (соя/кукуруза/рапс без органик-метки). Одобренные ГМО не признаны вредными (EFSA/ВОЗ) — на балл не влияет. <a href="https://www.efsa.europa.eu/en/topics/topic/genetically-modified-organisms" target="_blank" rel="noopener">Источник</a></div>`:'';
+  // Состав чипами
+  const ings=(p.ingredients&&p.ingredients.length?p.ingredients.map(i=>i.text):((p.ingredients_text_ru||p.ingredients_text||'').split(','))).map(s=>s.trim()).filter(Boolean);
+  const ingHtml=ings.map(t=>{
+    const m=t.match(/[eе]\s?(\d{3,4}[a-z]?)/i);
+    if(m){const info=lookupAdd('e'+m[1].toLowerCase());
+      if(info){const c=ST_META[info.s].c;return`<span data-add="${info.code}" style="border-color:${c};color:${c}">${esc(t)}</span>`}}
+    return`<span>${esc(t)}</span>`;
+  }).join('')||'<span>Состав не указан</span>';
+  // Причины
+  const reasons=scored.reasons.map(r=>{
+    const bg=r.ic==='+'?'#2E7D32':r.ic==='-'?'#E53935':'#98a2b3';
+    return`<div class="reason"><div class="ic" style="background:${bg}">${r.ic==='+'?'▲':r.ic==='-'?'▼':'i'}</div><div>${esc(r.text)}${r.src?`<br><a href="${esc(r.src)}" target="_blank" rel="noopener">Официальный источник ↗</a>`:''}</div></div>`;
+  }).join('');
+  // Breakdown
+  const bn={additives:'Добавки (40%)',processing:'Переработка (20%)',nutrition:'Нутриенты (25%)',naturalness:'Натуральность (15%)'};
+  const bars=Object.entries(scored.breakdown).map(([k,v])=>`<div class="bar-row"><span class="lbl">${bn[k]}</span><div class="bar"><i style="width:${v}%;background:${getColorForScore(v)}"></i></div><b>${v}</b></div>`).join('');
+  // Нутриенты
+  const n=p.nutriments||{},f=(v,u='г')=>v!=null?`${v} ${u}`:'—';
+  const nut=`<table>
+    <tr><td>Энергия</td><td>${f(n['energy-kcal_100g'],'ккал')}</td></tr>
+    <tr><td>Белки</td><td>${f(n['proteins_100g'])}</td></tr>
+    <tr><td>Жиры / насыщ.</td><td>${f(n['fat_100g'])} / ${f(n['saturated-fat_100g'])}</td></tr>
+    <tr><td>Углеводы / сахара</td><td>${f(n['carbohydrates_100g'])} / ${f(n['sugars_100g'])}</td></tr>
+    <tr><td>Соль</td><td>${f(n['salt_100g'])}</td></tr>
+    <tr><td>Клетчатка</td><td>${f(n['fiber_100g'])}</td></tr></table>`;
+  const fav=getFavs().includes(b);
+  const upd=p.last_modified_t?new Date(p.last_modified_t*1000).toLocaleDateString('ru-RU'):'—';
+  const c=$('productCard');
+  c.innerHTML=`
+  <div class="card" style="background:${getTint(shownScore)}">
+    <div class="prod-head">
+      ${p.image_front_url?`<img src="${esc(p.image_front_url)}" alt="">`:''}
+      <div><h2>${esc(name)}</h2><p>${esc(brand)} · ${esc(b)}</p></div>
+    </div>
+    ${expBanner}${allergBanner}
+    <div class="ring-wrap">
+      <div class="ring-box">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <circle class="ring-bg" cx="90" cy="90" r="78"/>
+          <circle class="ring-fg" id="ringFg" cx="90" cy="90" r="78" stroke="${color}" stroke-dasharray="${C}" stroke-dashoffset="${C}"/>
+        </svg>
+        <div class="ring-num"><b id="ringNum" style="color:${color}">0</b><i>из 100</i></div>
+      </div>
+      <div class="verdict" style="background:${color};color:${tc}">${vIcon(shownScore)} ${vt}</div>
+      <p style="color:var(--muted);font-size:13px;margin-top:7px">${vs}</p>
+    </div>
+    ${gmoPlate}
+    ${offline?`<div class="banner info">📴 Офлайн-копия от ${new Date(cachedT).toLocaleDateString('ru-RU')}</div>`:''}
+    <div style="display:flex;gap:9px;margin-top:12px">
+      <button class="btn ghost" id="favBtn">${fav?'⭐ В избранном':'☆ Сохранить'}</button>
+      <button class="btn" id="altBtn">🌿 Альтернативы</button>
+    </div>
+    <div id="alts"></div>
+  </div>
+  <div class="card">
+    <details open><summary>Почему такая оценка</summary>${reasons||'<p style="color:var(--muted);padding:8px 0;font-size:13px">Нет данных для детализации</p>'}${bars}</details>
+    <details><summary>Состав (${ings.length})</summary><div class="ing">${ingHtml}</div><p style="color:var(--muted);font-size:11.5px;margin-top:9px">Нажми на выделенный ингредиент — справка о добавке из официального реестра.</p></details>
+    <details><summary>Пищевая ценность (на 100 г)</summary>${nut}</details>
+    <details><summary>Срок годности</summary>
+      <p style="color:var(--muted);font-size:12.5px;padding:8px 0">Обычный штрихкод не содержит дату — введи её с упаковки (или отсканируй QR с датой):</p>
+      <input type="date" id="expInput" value="${esc(exp)}">
+    </details>
+    <p class="fineprint">Данные: <a href="https://world.openfoodfacts.org/product/${esc(b)}" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) · обновлено ${upd}. Оценка информационная, не медицинская рекомендация.</p>
+  </div>`;
+  $('skeleton').classList.add('hidden');c.classList.remove('hidden');
+  // Анимация кольца + счётчик
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    $('ringFg').style.strokeDashoffset=C*(1-shownScore/100);
+    const t0=performance.now();
+    const tick=t=>{const k=Math.min(1,(t-t0)/900);$('ringNum').textContent=Math.round(shownScore*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)};
+    requestAnimationFrame(tick);
+  }));
+  navigator.vibrate&&navigator.vibrate(verdict==='avoid'?[60,60,60]:40);
+  $('favBtn').onclick=()=>{let f=getFavs();f=f.includes(b)?f.filter(x=>x!==b):[...f,b];store.set('fs_favs',f);$('favBtn').textContent=f.includes(b)?'⭐ В избранном':'☆ Сохранить'};
+  $('altBtn').onclick=loadAlternatives;
+}
+/* Делегирование: чипы добавок и дата годности */
+$('productCard').addEventListener('click',e=>{
+  const chip=e.target.closest('[data-add]');if(chip)openSheet(chip.dataset.add);
+  const alt=e.target.closest('[data-alt]');if(alt)loadProduct(alt.dataset.alt);
+});
+$('productCard').addEventListener('change',e=>{
+  if(e.target.id==='expInput'&&current){
+    const m=store.get('fs_exp',{});m[current.b]=e.target.value;store.set('fs_exp',m);renderProduct();
+  }
+});
+function openSheet(code){
+  const info=lookupAdd(code);if(!info)return;
+  const meta=ST_META[info.s];
+  $('sheetInner').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h2 style="font-size:18px">${info.code.toUpperCase()} — ${esc(info.n)}</h2>
+      <button class="btn ghost" style="width:auto;padding:7px 13px" onclick="document.getElementById('sheet').classList.add('hidden')">✕</button>
+    </div>
+    <span class="score-pill" style="background:${meta.c}">${meta.t}</span>
+    <p style="font-size:14px;line-height:1.55;margin:13px 0">${esc(info.r)}</p>
+    <a href="${esc(info.src||SRC_EFSA)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--muted)">Официальный источник (EFSA / реестр) ↗</a>`;
+  $('sheet').classList.remove('hidden');
+}
+$('sheet').onclick=e=>{if(e.target.id==='sheet')$('sheet').classList.add('hidden')};
+
+/* ================= АЛЬТЕРНАТИВЫ (search API OFF) ================= */
+async function loadAlternatives(){
+  if(!current)return;
+  const box=$('alts');box.innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0">Ищем варианты получше…</p>';
+  const cat=(current.p.categories_tags||[]).find(t=>t.startsWith('en:'));
+  if(!cat){box.innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0">Нет категории для поиска альтернатив.</p>';return}
+  try{
+    const j=await fetchJSON(`https://world.openfoodfacts.org/api/v2/search?categories_tags_en=${encodeURIComponent(cat.slice(3))}&fields=code,${FIELDS}&page_size=24`,2);
+    const alts=(j.products||[]).filter(x=>x.code!==current.b)
+      .map(x=>({x,s:scoreProduct(x)})).filter(o=>o.s.score>current.scored.score+5)
+      .sort((a,b)=>b.s.score-a.s.score).slice(0,3);
+    box.innerHTML=alts.length?alts.map(({x,s})=>`
+      <div class="alt" data-alt="${esc(x.code)}">
+        ${x.image_front_small_url?`<img src="${esc(x.image_front_small_url)}">`:''}
+        <div class="nm"><b>${esc(x.product_name_ru||x.product_name||'Без названия')}</b><span style="color:var(--muted)">${esc(x.brands||'')}</span></div>
+        <span class="score-pill" style="background:${getColorForScore(s.score)};color:${contrastText(getColorForScore(s.score))}">${s.score}</span>
+      </div>`).join(''):'<p style="color:var(--muted);font-size:13px;padding:10px 0">В этой категории не нашлось заметно лучших вариантов 🤷</p>';
+  }catch(e){box.innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0">Поиск недоступен (лимит запросов OFF). Попробуй через минуту.</p>'}
+}
+
+/* ================= ИСТОРИЯ / ИЗБРАННОЕ ================= */
+function renderRecent(){
+  $('recent').innerHTML=getHist().slice(0,3).map(h=>`
+    <div class="chip" onclick="loadProduct('${esc(h.b)}')"><span class="dot" style="background:${getColorForScore(h.score)}"></span>${esc(h.name.slice(0,22))}</div>`).join('');
+}
+function renderHist(){
+  const q=($('histSearch').value||'').toLowerCase(),favs=getFavs();
+  let h=getHist();
+  if(histFilter==='fav')h=h.filter(x=>favs.includes(x.b));
+  else if(histFilter!=='all')h=h.filter(x=>x.verdict===histFilter);
+  if(q)h=h.filter(x=>x.name.toLowerCase().includes(q)||x.b.includes(q));
+  $('histList').innerHTML=h.length?h.map(x=>`
+    <div class="hist-item" data-b="${esc(x.b)}">
+      <span class="dot" style="background:${getColorForScore(x.score)};width:14px;height:14px;flex-basis:14px"></span>
+      <div class="nm"><b>${favs.includes(x.b)?'⭐ ':''}${esc(x.name)}</b><i>${esc(x.brand)} · ${new Date(x.ts).toLocaleDateString('ru-RU')}</i></div>
+      <span class="score-pill" style="background:${getColorForScore(x.score)};color:${contrastText(getColorForScore(x.score))}">${vIcon(x.score)} ${x.score}</span>
+      <button class="del" data-del="${esc(x.b)}">✕</button>
+    </div>`).join(''):'<p style="color:var(--muted);text-align:center;padding:30px 0;font-size:14px">Пусто. Отсканируй первый продукт 📷</p>';
+}
+$('histList').addEventListener('click',e=>{
+  const del=e.target.closest('[data-del]');
+  if(del){store.set('fs_hist',getHist().filter(x=>x.b!==del.dataset.del));renderHist();renderRecent();return}
+  const item=e.target.closest('[data-b]');if(item)loadProduct(item.dataset.b);
+});
+$('histSearch').oninput=renderHist;
+$('histFilters').addEventListener('click',e=>{
+  const b=e.target.closest('[data-f]');if(!b)return;
+  histFilter=b.dataset.f;
+  document.querySelectorAll('#histFilters button').forEach(x=>x.classList.toggle('on',x===b));
+  renderHist();
+});
+
+/* ================= НАСТРОЙКИ ================= */
+function renderSettings(){
+  const my=getAllerg();
+  $('allergList').innerHTML=ALLERGENS.map(([tag,label])=>`
+    <label class="set-row">${label}<input type="checkbox" data-tag="${tag}" ${my.includes(tag)?'checked':''}></label>`).join('');
+}
+$('allergList').addEventListener('change',()=>{
+  store.set('fs_allerg',[...document.querySelectorAll('#allergList input:checked')].map(i=>i.dataset.tag));
+  toast('Сохранено — влияет на персональные предупреждения');
+});
+$('clearHist').onclick=()=>{store.set('fs_hist',[]);store.set('fs_favs',[]);renderRecent();toast('История очищена')};
+$('clearCache').onclick=()=>{store.set('fs_cache',{});toast('Офлайн-кэш очищен')};
+
+/* ================= СТАРТ ================= */
+renderRecent();renderSettings();showScreen('scan');
+</script>
+</body>
+</html>
