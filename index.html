@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E2A1E">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Food Scanner — ИИ-оценка продуктов</title>
+<title>Food Scanner — ИИ-разбор состава без регистрации</title>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://js.puter.com/v2/"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
 :root{
 --forest:#0E2A1E;--leaf:#1F7A4D;--lime:#B7F04A;--amber:#FB8C00;--red:#E53935;--berry:#D6336C;--blue:#2F80ED;--violet:#7C4DFF;
@@ -42,6 +42,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .btn:active{transform:scale(.98)}
 .btn.ai{background:linear-gradient(140deg,var(--violet),var(--berry));color:#fff;box-shadow:0 8px 22px rgba(124,77,255,.32)}
 .btn.ghost{background:transparent;color:var(--text);border:1.5px solid var(--line);box-shadow:none}
+.btn.danger{background:linear-gradient(140deg,var(--red),#B71C1C);color:#fff}
 .btn.sm{width:auto;padding:9px 15px;font-size:13px}
 input,textarea,select{width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--text);font:inherit;transition:border-color .2s}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--leaf)}
@@ -57,6 +58,7 @@ label.f{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:1
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--text);transition:transform .15s,border-color .2s}
 .chip:active{transform:scale(.95)}.chip:hover{border-color:var(--leaf)}
+.chip.on{background:linear-gradient(140deg,var(--violet),var(--berry));color:#fff;border-color:transparent}
 .dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px}
 .fineprint{color:var(--muted);font-size:11.5px;line-height:1.55;margin:12px 2px}
 .fineprint a{color:var(--leaf)}
@@ -92,7 +94,7 @@ details[open] summary::after{transform:rotate(180deg)}
 .bar-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);padding:5px 0}
 .bar-row .lbl{flex:0 0 116px}
 .bar{flex:1;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
-.bar i{display:block;height:100%;border-radius:99px}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .4s}
 .ing{display:flex;flex-wrap:wrap;gap:7px;padding-top:10px}
 .ing span{border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer}
 table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
@@ -104,9 +106,11 @@ td{padding:7px 2px;border-bottom:1px dashed var(--line)}td:last-child{text-align
 .alt .nm{flex:1;font-size:13px;line-height:1.3}
 .pill{border-radius:999px;padding:4px 11px;font-size:12px;font-weight:800;color:#fff;white-space:nowrap}
 .hist-item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:12px 14px;margin-bottom:9px;cursor:pointer;animation:up .35s both}
+.hist-item.sel{border-color:var(--violet);box-shadow:0 0 0 2px rgba(124,77,255,.18)}
 .hist-item .nm{flex:1;min-width:0}.hist-item .nm b{font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hist-item .nm i{font-style:normal;color:var(--muted);font-size:11.5px}
 .hist-item .del{color:var(--muted);background:none;font-size:15px;padding:6px}
+.hist-item input[type=checkbox]{width:20px;height:20px;accent-color:var(--violet);flex:0 0 20px}
 .filters{display:flex;gap:7px;overflow-x:auto;margin:10px 0;padding-bottom:3px}
 .filters button{background:var(--card);border:1.5px solid var(--line);color:var(--muted);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:700;white-space:nowrap}
 .filters button.on{background:linear-gradient(140deg,var(--forest),var(--leaf));color:#fff;border-color:transparent}
@@ -122,7 +126,6 @@ td{padding:7px 2px;border-bottom:1px dashed var(--line)}td:last-child{text-align
 .mini{position:relative;width:120px;height:120px;flex:0 0 120px}
 .mini-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
 .preview{display:flex;gap:14px;align-items:center;background:var(--bg);border:1px dashed var(--line);border-radius:18px;padding:14px;margin-top:14px}
-.photo-prev{width:76px;height:76px;border-radius:14px;object-fit:cover;border:1px solid var(--line);background:#fff}
 h3.sec{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
 .step{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:linear-gradient(140deg,var(--leaf),var(--lime));color:#0B1410;font-size:12px;font-weight:800}
 .step.ai{background:linear-gradient(140deg,var(--violet),var(--berry));color:#fff}
@@ -137,6 +140,9 @@ h3.sec{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
 .li .b{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:800}
 .dots::after{content:"";animation:dots 1.2s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.prog{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--violet),var(--berry),var(--lime));transition:width .3s}
+pre.ocr{white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;max-height:260px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
 .hidden{display:none!important}
 a{color:inherit}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -146,7 +152,7 @@ a{color:inherit}
 <body>
 <header>
   <div class="logo">🥗</div>
-  <div class="brand"><b>Food Scanner</b><i>ИИ-разбор состава · вердикт</i></div>
+  <div class="brand"><b>Food Scanner</b><i>ИИ-разбор состава · без регистрации</i></div>
   <button class="hbtn" id="soundBtn" title="Звук">🔊</button>
   <button class="hbtn" id="themeBtn" title="Тема">🌓</button>
 </header>
@@ -168,10 +174,10 @@ a{color:inherit}
   <div class="card">
     <h3 class="sec">⚡ Проверь на примерах</h3>
     <div class="chips" id="examples"></div>
-    <p class="fineprint" style="margin:10px 0 0">Нет в базе? Приложение попросит фото названия и состава и разберёт их ИИ-моделью по питанию.</p>
+    <p class="fineprint" style="margin:10px 0 0">Нет в базе? Сфотографируй название и состав — разберёт ИИ без регистрации, а если сети нет, анализ пройдёт прямо на телефоне.</p>
   </div>
   <div class="chips" id="recent" style="margin-bottom:6px"></div>
-  <p class="fineprint">Данные: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) + ИИ-разбор твоих фото. Оценка информационная, не медицинская рекомендация.</p>
+  <p class="fineprint">Данные: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) + разбор твоих фото. Оценка информационная, не медицинская рекомендация.</p>
 </section>
 
 <section id="scr-product" class="screen">
@@ -192,26 +198,38 @@ a{color:inherit}
     <button data-f="neutral">🟠 Умеренно</button>
     <button data-f="avoid">🔴 Игнорировать</button>
     <button data-f="fav">⭐ Избранное</button>
-    <button data-f="ai">🤖 ИИ-разбор</button>
+    <button data-f="ai">🤖 Разобранные</button>
   </div>
-  <select id="histSort" style="margin-bottom:12px">
+  <select id="histSort" style="margin-bottom:10px">
     <option value="date">Сначала новые</option>
     <option value="scoreDesc">Оценка: выше → ниже</option>
     <option value="scoreAsc">Оценка: ниже → выше</option>
     <option value="name">По названию А→Я</option>
   </select>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn ghost sm" id="selBtn" style="flex:1">☑️ Выбрать</button>
+    <button class="btn ghost sm" id="saveViewBtn" style="flex:1">💾 Сохранить вид</button>
+  </div>
+  <div id="bulkBar" class="hidden" style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn danger sm" id="bulkDel" style="flex:2">Удалить выбранные</button>
+    <button class="btn ghost sm" id="bulkCancel" style="flex:1">Отмена</button>
+  </div>
+  <div class="chips" id="views" style="margin-bottom:12px"></div>
   <div id="histList"></div>
 </section>
 
 <section id="scr-settings" class="screen">
   <div class="card">
-    <h3 class="sec">🤖 ИИ-модель</h3>
-    <select id="aiModel">
-      <option value="gpt-4o-mini">Быстрая (gpt-4o-mini)</option>
-      <option value="gpt-4o">Точная (gpt-4o)</option>
-      <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+    <h3 class="sec">🤖 Как analysировать состав</h3>
+    <select id="aiMode">
+      <option value="auto">Авто: ИИ → если недоступен, на телефоне</option>
+      <option value="cloud">Только ИИ-модель (интернет)</option>
+      <option value="local">Только на телефоне (без интернета)</option>
     </select>
-    <p class="fineprint" style="margin:10px 0 0">ИИ работает через бесплатный шлюз Puter: ключи и сервер не нужны, при первом анализе откроется окно входа. Модель ограничена ролью эксперта по составу продуктов, а итоговый балл считает локальный движок по EFSA/ВОЗ — ИИ не может его завысить.</p>
+    <label class="f">ИИ-модель</label>
+    <select id="aiModel"><option value="openai">openai (по умолчанию)</option></select>
+    <p class="fineprint" style="margin:10px 0 0">ИИ работает через свободный шлюз Pollinations: без ключей, аккаунтов и телефона. Если шлюз недоступен или лимит исчерпан, приложение само переходит на локальный разбор: нейросетевой OCR читает этикетку на телефоне, а состав оценивается по правилам EFSA/ВОЗ. Итоговый балл всегда считает локальный движок — ИИ не может его завысить.</p>
+    <button class="btn ghost sm" id="reloadModels" style="margin-top:10px">🔄 Обновить список моделей</button>
   </div>
   <div class="card">
     <h3 class="sec">🥗 Диеты</h3>
@@ -227,11 +245,11 @@ a{color:inherit}
     <label class="f" style="margin-top:4px">Загрузить данные из файла</label>
     <input type="file" id="impFile" accept="application/json">
     <button class="btn ghost" id="clearHist" style="margin:12px 0 9px">Очистить историю</button>
-    <button class="btn ghost" id="clearCache">Очистить кэш и ИИ-товары</button>
+    <button class="btn ghost" id="clearCache">Очистить кэш и разобранные товары</button>
   </div>
   <div class="card">
     <h3 class="sec">ℹ️ О приложении</h3>
-    <p class="fineprint" style="margin:0">Скоринг: добавки 40% (EFSA / ТР ТС 029/2012), переработка NOVA 20%, нутриенты 25% (пороги ВОЗ), натуральность 15% + критические правила. ГМО — информационная плашка, на балл не влияет (EFSA/ВОЗ). ИИ может ошибаться при чтении этикетки — сверяй вывод с упаковкой. Оценка информационная, не медицинская рекомендация.</p>
+    <p class="fineprint" style="margin:0">Скоринг: добавки 40% (EFSA / ТР ТС 029/2012), переработка NOVA 20%, нутриенты 25% (пороги ВОЗ), натуральность 15% + критические правила. ГМО — информационная плашка, на балл не влияет (EFSA/ВОЗ). Распознавание этикетки может ошибаться — сверяй вывод с упаковкой. Оценка информационная, не медицинская рекомендация.</p>
   </div>
 </section>
 </main>
@@ -250,13 +268,13 @@ a{color:inherit}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a=0,b=100)=>Math.min(b,Math.max(a,v));
-const store={get(k,d){try{return JSON.parse(localStorage.getItem('fs_'+k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem('fs_'+k,JSON.stringify(v))}catch(e){toast('Память телефона заполнена — очисти кэш')}}};
+const store={get(k,d){try{return JSON.parse(localStorage.getItem('fs_'+k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem('fs_'+k,JSON.stringify(v))}catch(e){toast('Память заполнена — очисти кэш')}}};
 let soundOn=store.get('sound',true);
 function beep(f){if(!soundOn)return;try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f||880;g.gain.value=.05;o.start();o.stop(c.currentTime+.13)}catch(e){}}
 function buzz(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
 function toast(msg,label,fn){const t=$('toast');t.innerHTML='';t.appendChild(document.createTextNode(msg));
   if(label&&fn){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{fn();t.classList.add('hidden')};t.appendChild(b)}
-  t.classList.remove('hidden');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.add('hidden'),4600)}
+  t.classList.remove('hidden');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.add('hidden'),5000)}
 function isDark(){return document.documentElement.dataset.theme==='dark'}
 function applyTheme(){const m=store.get('theme','auto');
   const d=m==='dark'||(m==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);
@@ -266,7 +284,7 @@ $('themeBtn').onclick=()=>{const m=store.get('theme','auto');store.set('theme',m
 $('soundBtn').onclick=()=>{soundOn=!soundOn;store.set('sound',soundOn);$('soundBtn').textContent=soundOn?'🔊':'🔇';if(soundOn)beep()};
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(store.get('theme','auto')==='auto'){applyTheme();if(current&&current.p)renderProduct()}});
 
-/* ===== СЛОВАРЬ ДОБАВОК (EFSA / FDA / ТР ТС 029/2012) ===== */
+/* ===== СЛОВАРЬ ДОБАВОК ===== */
 const SRC_EFSA='https://www.efsa.europa.eu/en/topics/topic/food-additives';
 const ADD={
 e100:{n:'Куркумин',s:'safe',r:'Натуральный краситель из куркумы.'},e101:{n:'Рибофлавин (B2)',s:'safe',r:'Витамин, безопасен.'},
@@ -298,8 +316,9 @@ e955:{n:'Сукралоза',s:'limited',r:'Сахарозаменитель.'},
 e965:{n:'Мальтит',s:'limited',r:'Слабительный эффект.'},e1442:{n:'Модифицированный крахмал',s:'limited',r:'Маркер ультрапереработки.'}};
 const ST_META={safe:{t:'Безопасна',c:'#2E7D32'},limited:{t:'Ограничения',c:'#FB8C00'},controversial:{t:'Спорная',c:'#F4511E'},banned:{t:'Запрещена в ЕС',c:'#E53935'}};
 function lookupAdd(raw){const c=String(raw).toLowerCase().replace(/^en:/,'');if(ADD[c])return{code:c,...ADD[c]};const b=c.replace(/[a-z]$/,'');if(ADD[b])return{code:b,...ADD[b]};return null}
+const RU_ADD=[['нитрит натрия','e250'],['нитрат натрия','e251'],['глутамат','e621'],['аспартам','e951'],['ацесульфам','e950'],['сукралоза','e955'],['бензоат','e211'],['сорбат калия','e202'],['сорбиновая','e200'],['диоксид титана','e171'],['диоксид серы','e220'],['сульфит','e220'],['пиросульфит','e223'],['каррагинан','e407'],['пектин','e440'],['лецитин','e322'],['лимонная кислота','e330'],['аскорбиновая','e300'],['токоферол','e306'],['кармин','e120'],['тартразин','e102'],['куркумин','e100'],['стеви','e960'],['мальтит','e965'],['сорбит','e420'],['ксантан','e415'],['гуаров','e412'],['диглицерид','e471'],['модифицированный крахмал','e1442'],['пирофосфат','e450'],['ортофосфорная','e338'],['сода','e500'],['карбонат аммония','e503'],['каротин','e160a'],['рибофлавин','e101'],['уксусная кислота','e260'],['молочная кислота','e270']];
 
-/* ===== СКОРИНГ (локальный, авторитетный) ===== */
+/* ===== СКОРИНГ ===== */
 const CFG={w:{add:.4,proc:.2,nut:.25,nat:.15},pen:{safe:0,limited:12,controversial:25,banned:100},
 nova:{1:100,2:75,3:45,4:10},organic:['en:organic','en:eu-organic','en:usda-organic'],
 gmo:['soy','soya','corn','maize','canola','rapeseed','соя','соев','кукуруз','рапс'],critCap:30,nova4Cap:65,bannedCap:20};
@@ -311,7 +330,7 @@ function scoreProduct(p){
   ings.forEach(i=>{const id=i.id||'';if(id.startsWith('en:e')&&!add.includes(id))add.push(id)});
   const ingText=p.ingredients_text_ru||p.ingredients_text||'';
   const art=ings.some(i=>['en:vanillin','en:ethyl-vanillin'].includes(i.id||''))||/ванилин|vanillin|искусственн\w*\s+ароматизатор/i.test(ingText);
-  const org=(p.labels_tags||[]).some(l=>CFG.organic.includes(l));
+  const org=(p.labels_tags||[]).some(l=>CFG.organic.includes(l))||/органик|organic|bio\b/i.test(ingText);
   const cnt=ings.length||null;
   const reasons=[];const R=(ic,text,src)=>reasons.push({ic,text,src});
   let a=100,banned=false;const seen=new Set();
@@ -333,7 +352,7 @@ function scoreProduct(p){
   if((fib??0)>=3){nu+=8;R('+','Богат клетчаткой ('+fib+' г/100 г)')}
   nu=clamp(nu);
   let na=60;
-  if(org){na+=30;R('+','Органик-сертификат')}
+  if(org){na+=30;R('+','Органик-маркировка')}
   if(cnt!=null){if(cnt<=5){na+=20;R('+','Короткий понятный состав ('+cnt+' ингр.)')}else if(cnt>15){na-=25;R('-','Очень длинный состав ('+cnt+' ингр.)')}}
   if(art){na-=20;R('-','Искусственные ароматизаторы')}
   na=clamp(na);
@@ -371,7 +390,7 @@ function personalCheck(p){
   return{blocks,warns};
 }
 
-/* ===== ЦВЕТ: OKLCH ===== */
+/* ===== ЦВЕТ ===== */
 const s2l=c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4,l2s=c=>c<=.0031308?12.92*c:1.055*c**(1/2.4)-.055;
 function hexToOklch(hex){const v=parseInt(hex.slice(1),16),[r,g,b]=[(v>>16)&255,(v>>8)&255,v&255].map(x=>s2l(x/255));
   const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
@@ -415,7 +434,7 @@ function cacheSet(b,d){const c=store.get('cache',{});c[b]={t:Date.now(),d};const
   if(k.length>120)k.sort((x,y)=>c[x].t-c[y].t).slice(0,k.length-120).forEach(x=>delete c[x]);store.set('cache',c)}
 const localGet=b=>store.get('local',{})[b];
 function localSet(b,p){const c=store.get('local',{});c[b]=p;const k=Object.keys(c);
-  if(k.length>40)k.sort((x,y)=>(c[x]._ts||0)-(c[y]._ts||0)).slice(0,k.length-40).forEach(x=>delete c[x]);store.set('local',c)}
+  if(k.length>25)k.sort((x,y)=>(c[x]._ts||0)-(c[y]._ts||0)).slice(0,k.length-25).forEach(x=>delete c[x]);store.set('local',c)}
 async function fetchJSON(url,tries=3){
   for(let i=0;i<tries;i++){try{const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),12000);
     const r=await fetch(url,{signal:ctrl.signal});clearTimeout(to);
@@ -426,48 +445,78 @@ async function fetchJSON(url,tries=3){
 async function apiGetProduct(b){const j=await fetchJSON('https://world.openfoodfacts.org/api/v2/product/'+b+'?fields='+FIELDS);
   if(!j.product||!(j.product.product_name||j.product.product_name_ru))throw new Error('not-found');return j.product}
 
-/* ===== ИИ: узкий эксперт по питанию ===== */
+/* ===== ИИ БЕЗ РЕГИСТРАЦИИ: Pollinations + локальный OCR ===== */
 const AI_SYSTEM=[
 'Ты — Food Scanner AI, узкопрофильный эксперт по составу пищевых продуктов и пищевых добавках.',
-'Ты обсуждаешь ТОЛЬКО еду, состав, добавки, нутриенты и безопасность пищевых продуктов. Любые другие темы игнорируй.',
-'Ты читаешь фотографии этикетки и извлекаешь факты. НЕ ВЫДУМЫВАЙ ингредиенты и цифры: если чего-то не видно — ставь null.',
-'Опирайся на реестры EFSA, FDA GRAS и ТР ТС 029/2012. ГМО само по себе не считай вредным (позиция EFSA/ВОЗ).',
-'Не ставь диагнозы и не давай медицинских назначений. Пиши по-русски, коротко и по делу.',
-'Ответь СТРОГО одним JSON-объектом без markdown и пояснений, по схеме:',
+'Ты обсуждаешь ТОЛЬКО еду, состав, добавки, нутриенты и безопасность продуктов. Другие темы игнорируй.',
+'Извлекай факты с этикетки. НЕ ВЫДУМЫВАЙ ингредиенты и цифры: если не видно — null.',
+'Опирайся на EFSA, FDA GRAS и ТР ТС 029/2012. ГМО само по себе не считай вредным (позиция EFSA/ВОЗ).',
+'Не ставь диагнозы. Пиши по-русски, коротко и по делу.',
+'Ответь СТРОГО одним JSON-объектом без markdown:',
 '{"name":string|null,"brand":string|null,"category":"beverages|dairies|meats|fish|sweets|cereals|breads|produce|other",',
 '"ingredients":[string],"additives":[{"code":"e250","name":string,"risk":"safe|limited|controversial|banned","why":string}],',
 '"nutrition_per_100g":{"sugars_g":number|null,"salt_g":number|null,"saturated_fat_g":number|null,"protein_g":number|null,"fiber_g":number|null,"kcal":number|null},',
-'"organic":boolean,"allergens":[string],"benefits":[string],"harms":[string],"check_on_label":[string],"ai_score":number,"confidence":"high|medium|low","notes":string}',
-'benefits — до 5 реальных плюсов состава; harms — до 5 конкретных минусов с указанием ингредиента/добавки; check_on_label — до 3 советов, что проверить на упаковке.'
+'"organic":boolean,"allergens":[string],"benefits":[string],"harms":[string],"check_on_label":[string],"ai_score":number,"confidence":"high|medium|low","notes":string}'
 ].join('\n');
-function aiModel(){return store.get('aimodel','gpt-4o-mini')}
+const AI_SHORT='Ты эксперт по составу продуктов (EFSA/ВОЗ). Отвечай только JSON: {"name","brand","category","ingredients":[],"additives":[{"code","name","risk","why"}],"nutrition_per_100g":{"sugars_g","salt_g","saturated_fat_g","protein_g","fiber_g","kcal"},"organic","allergens":[],"benefits":[],"harms":[],"check_on_label":[],"confidence","notes"}. Не выдумывай данные, неизвестное = null. Пиши по-русски.';
+const aiMode=()=>store.get('aimode','auto');
+const aiModel=()=>store.get('aimodel','openai');
 function extractText(r){
   if(!r)return '';
   if(typeof r==='string')return r;
-  const c=r.message?.content??r.content??r.text??r?.choices?.[0]?.message?.content;
+  const c=r.choices?.[0]?.message?.content??r.message?.content??r.content??r.text;
   if(Array.isArray(c))return c.map(x=>x?.text||'').join('');
   if(typeof c==='string')return c;
   try{return String(r)}catch(e){return ''}
 }
-async function callVision(prompt,images,model){
-  if(typeof puter==='undefined'||!puter.ai)throw new Error('no-puter');
-  const withTimeout=p=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),90000))]);
+async function pollPost(url,body,ms){
+  const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),ms||60000);
   try{
-    const content=[{type:'text',text:prompt}].concat(images.map(u=>({type:'image_url',image_url:{url:u}})));
-    const t=extractText(await withTimeout(puter.ai.chat([{role:'system',content:AI_SYSTEM},{role:'user',content}],{model})));
-    if(t&&t.length>20)return t;
-  }catch(e){}
-  try{
-    const t=extractText(await withTimeout(puter.ai.chat(AI_SYSTEM+'\n\n'+prompt,images,false,{model})));
-    if(t&&t.length>20)return t;
-  }catch(e){}
-  return extractText(await withTimeout(puter.ai.chat(AI_SYSTEM+'\n\n'+prompt,images[0],false,{model})));
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const ct=r.headers.get('content-type')||'';
+    return ct.includes('json')?await r.json():await r.text();
+  }finally{clearTimeout(to)}
 }
-function parseAiJson(text){
-  let t=String(text||'').replace(/```json/gi,'```').split('```').join('').trim();
-  const a=t.indexOf('{'),b=t.lastIndexOf('}');
-  if(a>=0&&b>a)t=t.slice(a,b+1);
-  return JSON.parse(t);
+async function aiVision(images,prompt){
+  const content=[{type:'text',text:prompt}].concat(images.map(u=>({type:'image_url',image_url:{url:u}})));
+  const msgs=[{role:'system',content:AI_SYSTEM},{role:'user',content}];
+  const model=aiModel();
+  const bodies=[
+    ['https://text.pollinations.ai/openai',{messages:msgs,model:model,referrer:location.origin}],
+    ['https://text.pollinations.ai/',{messages:msgs,model:model,jsonMode:true,referrer:location.origin}]
+  ];
+  for(const [url,body] of bodies){
+    try{const t=extractText(await pollPost(url,body,60000));if(t&&t.length>30)return t}catch(e){}
+  }
+  throw new Error('vision-unavailable');
+}
+async function aiText(prompt){
+  const msgs=[{role:'system',content:AI_SYSTEM},{role:'user',content:prompt}];
+  const model=aiModel();
+  try{const t=extractText(await pollPost('https://text.pollinations.ai/openai',{messages:msgs,model:model,referrer:location.origin},45000));if(t&&t.length>30)return t}catch(e){}
+  try{const t=extractText(await pollPost('https://text.pollinations.ai/',{messages:msgs,model:model,referrer:location.origin},45000));if(t&&t.length>30)return t}catch(e){}
+  const q=encodeURIComponent(AI_SHORT+'\n\n'+prompt.slice(0,1200));
+  const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),45000);
+  try{const r=await fetch('https://text.pollinations.ai/'+q,{signal:ctrl.signal});
+    if(!r.ok)throw new Error('HTTP '+r.status);return await r.text()}finally{clearTimeout(to)}
+}
+async function loadModels(){
+  const sel=$('aiModel');const cur=aiModel();
+  try{
+    const r=await fetch('https://text.pollinations.ai/models');const j=await r.json();
+    const arr=Array.isArray(j)?j:(j.models||[]);
+    const names=arr.map(m=>typeof m==='string'?m:(m.name||m.id)).filter(Boolean);
+    if(names.length){
+      const uniq=[...new Set(names)];
+      sel.innerHTML=uniq.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+      sel.value=uniq.includes(cur)?cur:(uniq.includes('openai')?'openai':uniq[0]);
+      store.set('aimodel',sel.value);
+      return true;
+    }
+  }catch(e){}
+  sel.innerHTML=['openai','openai-large','mistral'].map(n=>'<option value="'+n+'">'+n+'</option>').join('');
+  sel.value=cur;return false;
 }
 function compressImage(file,max){
   return new Promise((res,rej)=>{
@@ -475,32 +524,114 @@ function compressImage(file,max){
     img.onload=()=>{const k=Math.min(1,(max||1200)/Math.max(img.width,img.height));
       const cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
       cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      URL.revokeObjectURL(url);res(cv.toDataURL('image/jpeg',.82))};
+      URL.revokeObjectURL(url);res(cv.toDataURL('image/jpeg',.8))};
     img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('bad-image'))};img.src=url;
   });
 }
+async function ocrImages(urls,onProgress){
+  if(typeof Tesseract==='undefined')throw new Error('no-ocr');
+  let out='';
+  for(let i=0;i<urls.length;i++){
+    if(aiCancel)throw new Error('cancelled');
+    const res=await Tesseract.recognize(urls[i],'rus+eng',{logger:m=>{
+      if(m&&m.status==='recognizing text'&&typeof m.progress==='number')onProgress(Math.round(((i+m.progress)/urls.length)*100));
+    }});
+    out+=((res&&res.data&&res.data.text)||'')+'\n';
+  }
+  return out.trim();
+}
+function parseLabel(text){
+  const t=String(text||'').replace(/[ \t]+/g,' ');
+  const low=t.toLowerCase();
+  let ing='';
+  const m=t.match(/состав\s*[:\-]?\s*([\s\S]{15,1500}?)(?=пищевая|энергетическ|условия хранения|срок годности|хранить|изготовитель|гоСТ|ГОСТ|$)/i);
+  if(m)ing=m[1].replace(/\n+/g,' ').trim();
+  const grab=re=>{const x=t.match(re);if(!x)return undefined;const v=parseFloat(String(x[1]).replace(',','.'));return isFinite(v)?v:undefined};
+  const nut={};
+  const put=(k,v)=>{if(v!=null)nut[k]=v};
+  put('sugars_100g',grab(/сахар\w*\s*[-–:]?\s*(\d+[.,]?\d*)\s*г/i));
+  put('salt_100g',grab(/соль\s*[-–:]?\s*(\d+[.,]?\d*)\s*г/i));
+  put('saturated-fat_100g',grab(/насыщенн\w*[\s\S]{0,25}?(\d+[.,]?\d*)\s*г/i));
+  put('proteins_100g',grab(/белк\w*\s*[-–:]?\s*(\d+[.,]?\d*)\s*г/i));
+  put('fiber_100g',grab(/клетчатк\w*\s*[-–:]?\s*(\d+[.,]?\d*)\s*г/i));
+  put('energy-kcal_100g',grab(/(\d+[.,]?\d*)\s*ккал/i));
+  const set=new Set();
+  for(const x of low.matchAll(/[eе]\s*-?\s*(\d{3,4})\s*([a-zа-я])?/g))set.add('e'+x[1]+(x[2]||''));
+  RU_ADD.forEach(([k,code])=>{if(low.includes(k))set.add(code)});
+  let cat='';
+  if(/напиток|сок|вода|кола|лимонад|морс/.test(low))cat='en:beverages';
+  else if(/молок|творог|сыр|йогурт|кефир|сметан/.test(low))cat='en:dairies';
+  else if(/колбас|сосиск|ветчин|мясо|фарш|бекон/.test(low))cat='en:meats';
+  else if(/рыб|креветк|тунец|лосос|сельд/.test(low))cat='en:fish-and-seafood';
+  else if(/шоколад|конфет|печень|вафл|торт|мармелад|батончик/.test(low))cat='en:sweets';
+  else if(/крупа|овсян|макарон|рис|гречк|мук[аи]/.test(low))cat='en:cereals-and-potatoes';
+  else if(/хлеб|булк|батон|лаваш/.test(low))cat='en:breads';
+  const allerg=[];const AT=[['молок','en:milk'],['лактоз','en:milk'],['глютен','en:gluten'],['пшениц','en:gluten'],['яйц','en:eggs'],['орех','en:nuts'],['арахис','en:peanuts'],['соя','en:soybeans'],['соев','en:soybeans'],['рыб','en:fish']];
+  AT.forEach(([k,tag])=>{if(low.includes(k)&&!allerg.includes(tag))allerg.push(tag)});
+  const parts=(ing||t).split(/[,;\n]/).map(s=>s.trim()).filter(s=>s.length>2).slice(0,40);
+  return{ing,parts,nut,adds:[...set],cat,allerg,organic:/органик|organic|\bbio\b/i.test(low)};
+}
+function localExpert(p){
+  const n=p.nutriments||{},benefits=[],harms=[],check=[];
+  const nq=(k)=>n[k];
+  if((nq('proteins_100g')||0)>=8)benefits.push('Хороший источник белка — '+nq('proteins_100g')+' г на 100 г');
+  if((nq('fiber_100g')||0)>=3)benefits.push('Много клетчатки — '+nq('fiber_100g')+' г на 100 г, полезно для пищеварения');
+  if(nq('sugars_100g')!=null&&nq('sugars_100g')<5)benefits.push('Мало сахара — '+nq('sugars_100g')+' г на 100 г');
+  if(nq('salt_100g')!=null&&nq('salt_100g')<0.3)benefits.push('Мало соли — '+nq('salt_100g')+' г на 100 г');
+  if(nq('saturated-fat_100g')!=null&&nq('saturated-fat_100g')<1)benefits.push('Мало насыщенных жиров');
+  const ings=p.ingredients||[];
+  if(ings.length&&ings.length<=5)benefits.push('Короткий понятный состав — всего '+ings.length+' ингредиентов');
+  const safe=(p.additives_tags||[]).map(lookupAdd).filter(x=>x&&x.s==='safe');
+  if(safe.length)benefits.push('Безопасные добавки: '+safe.map(x=>x.n).join(', '));
+  (p.additives_tags||[]).forEach(tag=>{const i=lookupAdd(tag);if(i&&i.s!=='safe')harms.push(i.code.toUpperCase()+' — '+i.n+': '+i.r)});
+  const unk=(p.additives_tags||[]).map(lookupAdd).map((x,i)=>x?null:(p.additives_tags[i]||'').split(':').pop().toUpperCase()).filter(Boolean);
+  if(unk.length)harms.push('Неизвестные добавки: '+unk.join(', ')+' — оценка осторожная');
+  if((nq('sugars_100g')||0)>=22.5)harms.push('Очень много сахара — '+nq('sugars_100g')+' г на 100 г');
+  if((nq('salt_100g')||0)>=1.5)harms.push('Много соли — '+nq('salt_100g')+' г на 100 г');
+  if((nq('saturated-fat_100g')||0)>=5)harms.push('Много насыщенных жиров — '+nq('saturated-fat_100g')+' г на 100 г');
+  if(ings.length>15)harms.push('Очень длинный состав ('+ings.length+') — признак глубокой переработки');
+  if(/ванилин|искусственн\w*\s+ароматизатор/i.test(p.ingredients_text||''))harms.push('Искусственный ароматизатор вместо натурального сырья');
+  check.push('Сверь распознанный состав с этикеткой — распознавание может ошибаться');
+  if(nq('sugars_100g')==null)check.push('Не读到 сахара: сфотографируй таблицу КБЖУ отдельно и крупно');
+  if(!ings.length)check.push('Состав не распознан — пересними при ровном свете без бликов');
+  return{benefits:benefits.slice(0,5),harms:harms.slice(0,6),check:check.slice(0,3)};
+}
 const CAT_MAP={beverages:'en:beverages',dairies:'en:dairies',meats:'en:meats',fish:'en:fish-and-seafood',sweets:'en:sweets',cereals:'en:cereals-and-potatoes',breads:'en:breads',produce:'en:fruits-and-vegetables',other:''};
-const ALLER_MAP=[['молок','en:milk'],['лактоз','en:milk'],['глютен','en:gluten'],['пшениц','en:gluten'],['яйц','en:eggs'],['орех','en:nuts'],['арахис','en:peanuts'],['со[яй]','en:soybeans'],['рыб','en:fish']];
-function buildFromAi(b,j,photo){
+function buildFromAi(b,j,photo,ocr,engine){
   const ings=Array.isArray(j.ingredients)?j.ingredients.filter(x=>typeof x==='string'&&x.trim()):[];
-  const adds=Array.isArray(j.additives)?j.additives.map(a=>String(a?.code||'').toLowerCase().replace(/^en:/,'')).filter(c=>/^e\d{3,4}[a-z]?$/.test(c)):[];
+  const adds=Array.isArray(j.additives)?j.additives.map(a=>String(a&&a.code||'').toLowerCase().replace(/^en:/,'')).filter(c=>/^e\d{3,4}[a-z]?$/.test(c)):[];
   const n=j.nutrition_per_100g||{},nut={};
   const put=(k,v)=>{const x=typeof v==='number'?v:parseFloat(String(v??'').replace(',','.'));if(isFinite(x))nut[k]=x};
   put('sugars_100g',n.sugars_g);put('salt_100g',n.salt_g);put('saturated-fat_100g',n.saturated_fat_g);
   put('proteins_100g',n.protein_g);put('fiber_100g',n.fiber_g);put('energy-kcal_100g',n.kcal);
   const allerg=[];const at=(Array.isArray(j.allergens)?j.allergens:[]).join(' ').toLowerCase()+' '+ings.join(' ').toLowerCase();
-  ALLER_MAP.forEach(([k,tag])=>{if(new RegExp(k).test(at)&&!allerg.includes(tag))allerg.push(tag)});
+  [['молок','en:milk'],['лактоз','en:milk'],['глютен','en:gluten'],['пшениц','en:gluten'],['яйц','en:eggs'],['орех','en:nuts'],['арахис','en:peanuts'],['со[яй]','en:soybeans'],['рыб','en:fish']].forEach(([k,tag])=>{if(new RegExp(k).test(at)&&!allerg.includes(tag))allerg.push(tag)});
   const cat=CAT_MAP[j.category]||'';
-  return{product_name:j.name||('Товар '+b),brands:j.brand||'',ingredients_text:ings.join(', '),
+  const p={product_name:j.name||('Товар '+b),brands:j.brand||'',ingredients_text:ings.join(', '),
     ingredients:ings.map(t=>({text:t})),additives_tags:adds.map(c=>'en:'+c),nutriments:nut,
     categories_tags:cat?[cat]:[],labels_tags:j.organic?['en:organic']:[],allergens_tags:allerg,
-    nova_group:(adds.length&&ings.length>12)?4:(cat==='en:fruits-and-vegetables'&&ings.length<=3?1:undefined),
-    _local:true,_ai:j,_photo:photo||'',_ts:Date.now()};
+    nova_group:(adds.length&&ings.length>12)?4:undefined,_local:true,_photo:photo||'',_ocr:String(ocr||'').slice(0,4000),_ts:Date.now()};
+  const ex=localExpert(p);
+  p._ai={benefits:(Array.isArray(j.benefits)&&j.benefits.length?j.benefits:ex.benefits),
+    harms:(Array.isArray(j.harms)&&j.harms.length?j.harms:ex.harms),
+    check_on_label:(Array.isArray(j.check_on_label)&&j.check_on_label.length?j.check_on_label:ex.check),
+    notes:j.notes||'',confidence:j.confidence||'medium',engine:engine,model:engine==='cloud'?aiModel():'OCR + правила EFSA/ВОЗ'};
+  return p;
+}
+function buildFromOcr(b,info,photo,text){
+  const p={product_name:'Товар '+b,brands:'',ingredients_text:info.ing,
+    ingredients:info.parts.map(t=>({text:t})),additives_tags:info.adds.map(c=>'en:'+c),nutriments:info.nut,
+    categories_tags:info.cat?[info.cat]:[],labels_tags:info.organic?['en:organic']:[],allergens_tags:info.allerg,
+    nova_group:(info.adds.length&&info.parts.length>12)?4:undefined,_local:true,_photo:photo||'',_ocr:String(text||'').slice(0,4000),_ts:Date.now()};
+  const ex=localExpert(p);
+  p._ai={benefits:ex.benefits,harms:ex.harms,check_on_label:ex.check,notes:'Разобрано на телефоне: нейросетевой OCR + правила EFSA/ВОЗ. Интернет не использовался.',confidence:'medium',engine:'local',model:'OCR + правила EFSA/ВОЗ'};
+  return p;
 }
 
 /* ===== СОСТОЯНИЕ ===== */
-let current=null,histFilter='all',scanner=null,scanning=false,busy=false,torchOn=false,aiShots={front:null,ing:null,nut:null},aiBusy=false;
-const getHist=()=>store.get('hist',[]),getFavs=()=>store.get('favs',[]);
+let current=null,histFilter='all',scanner=null,scanning=false,busy=false,torchOn=false;
+let aiShots={front:null,ing:null,nut:null},aiBusy=false,aiCancel=false,selectMode=false,selected=new Set();
+const getHist=()=>store.get('hist',[]),getFavs=()=>store.get('favs',[]),getViews=()=>store.get('views',[]);
 function pushHist(b,p,s){let h=getHist().filter(x=>x.b!==b);
   h.unshift({b,name:p.product_name_ru||p.product_name||'Без названия',brand:p.brands||'',score:s.score,verdict:s.verdict,ts:Date.now(),ai:!!p._ai});
   store.set('hist',h.slice(0,150));renderRecent()}
@@ -510,7 +641,9 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
   $('scr-'+id).classList.add('active');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.scr===id));
   if(id==='scan'){busy=false;startScanner()}else stopScanner();
-  if(id==='history')renderHist();window.scrollTo(0,0)}
+  if(id==='history'){renderHist();renderViews()}
+  if(id==='settings')loadModels();
+  window.scrollTo(0,0)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showScreen(b.dataset.scr));
 $('backBtn').onclick=()=>showScreen('scan');
 
@@ -580,23 +713,25 @@ function renderProduct(){
   let aiCard='';
   if(ai){
     const list=(arr,col,ic)=>(Array.isArray(arr)?arr:[]).filter(Boolean).map(x=>'<div class="li"><div class="b" style="background:'+col+'">'+ic+'</div><div>'+esc(x)+'</div></div>').join('');
-    aiCard='<div class="card"><h3 class="sec">🤖 ИИ-разбор состава</h3>'+
-      (list(ai.benefits,'#2E7D32','+')||'<div class="li"><div class="b" style="background:#98a2b3">i</div><div>Явных плюсов ИИ не отметил</div></div>')+
+    aiCard='<div class="card"><h3 class="sec">'+(ai.engine==='local'?'📱 Разбор на телефоне':'🌐 ИИ-разбор состава')+'</h3>'+
+      (list(ai.benefits,'#2E7D32','+')||'<div class="li"><div class="b" style="background:#98a2b3">i</div><div>Явных плюсов не отмечено</div></div>')+
       list(ai.harms,'#E53935','−')+
-      (Array.isArray(ai.check_on_label)&&ai.check_on_label.length?'<div class="banner info" style="margin-top:10px">👀 Проверь на упаковке: '+esc(ai.check_on_label.join('; '))+'</div>':'')+
+      (Array.isArray(ai.check_on_label)&&ai.check_on_label.length?'<div class="banner info" style="margin-top:10px">👀 Проверь: '+esc(ai.check_on_label.join('; '))+'</div>':'')+
       (ai.notes?'<p class="fineprint" style="margin:10px 0 0">'+esc(ai.notes)+'</p>':'')+
-      '<p class="fineprint" style="margin:8px 0 0">Разбор подготовила модель '+esc(aiModel())+' по твоим фото. Итоговый балл выше посчитан локальным движком по EFSA/ВОЗ, а не ИИ. ИИ может ошибаться — сверь с этикеткой.</p></div>';
+      '<p class="fineprint" style="margin:8px 0 0">Источник разбора: '+esc(ai.model||'')+'. Итоговый балл посчитан локальным движком по EFSA/ВОЗ. Сверяй вывод с этикеткой.</p>'+
+      (p._ocr?'<details><summary>Распознанный текст этикетки</summary><pre class="ocr">'+esc(p._ocr)+'</pre><button class="btn ghost sm" id="fixOcr" style="margin-top:10px">✏️ Исправить текст вручную</button></details>':'')+
+      '</div>';
   }
   const c=$('productCard');
   c.innerHTML=
   '<div class="card" style="background:'+getTint(shown)+'">'+
     '<div class="prod-head">'+(photo?'<img src="'+esc(photo)+'" alt="">':'')+'<div><h2>'+esc(name)+'</h2><p>'+esc(brand)+' · '+esc(b)+'</p></div></div>'+
     expBanner+allergBanner+warnBanners+confBanner+
-    (ai?'<div class="banner ai">🤖 Разобрано ИИ по твоим фото этикетки</div>':(local?'<div class="banner good">📝 Данные добавлены тобой</div>':''))+
+    (ai?'<div class="banner ai">'+(ai.engine==='local'?'📱 Разобрано на телефоне без интернета':'🌐 Разобрано ИИ-моделью без регистрации')+'</div>':(local?'<div class="banner good">📝 Данные добавлены тобой</div>':''))+
     '<div class="ring-wrap"><div class="ring-box"><svg width="184" height="184" viewBox="0 0 184 184"><circle class="ring-bg" cx="92" cy="92" r="78"/><circle class="ring-fg" id="ringFg" cx="92" cy="92" r="78" stroke="'+color+'" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'" transform="rotate(-90 92 92)"/></svg><div class="ring-num"><b id="ringNum" style="color:'+color+'">0</b><i>из 100</i></div></div>'+
     '<div class="verdict" style="background:'+color+';color:'+tc+'">'+vIcon(shown)+' '+vt+'</div><p style="color:var(--muted);font-size:13px;margin-top:7px">'+vs+'</p></div>'+
     gmoPlate+(offline?'<div class="banner info">📴 Офлайн-копия от '+new Date(cachedT).toLocaleDateString('ru-RU')+'</div>':'')+
-    '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap"><button class="btn ghost" id="favBtn" style="flex:1">'+(fav?'⭐ В избранном':'☆ Сохранить')+'</button><button class="btn ai" id="reAiBtn" style="flex:1">🤖 Фото-разбор</button><button class="btn ghost" id="altBtn" style="flex:1">🌿 Альтернативы</button></div><div id="alts"></div>'+
+    '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap"><button class="btn ghost" id="favBtn" style="flex:1">'+(fav?'⭐ В избранном':'☆ Сохранить')+'</button><button class="btn ai" id="reAiBtn" style="flex:1">📸 Фото-разбор</button><button class="btn ghost" id="altBtn" style="flex:1">🌿 Альтернативы</button></div><div id="alts"></div>'+
   '</div>'+aiCard+
   '<div class="card"><h3 class="sec">🛒 Магазины России</h3><div class="chips">'+storeLinksHtml(name,b)+'</div></div>'+
   '<div class="card">'+
@@ -604,7 +739,7 @@ function renderProduct(){
     '<details><summary>Состав ('+ings.length+')</summary><div class="ing">'+ingHtml+'</div><p class="fineprint">Нажми на выделенный ингредиент — справка о добавке.</p></details>'+
     '<details><summary>Пищевая ценность (на 100 г)</summary>'+nut+'</details>'+
     '<details><summary>Срок годности</summary><p style="color:var(--muted);font-size:12.5px;padding:8px 0">Укажи дату с упаковки:</p><input type="date" id="expInput" value="'+esc(exp)+'"></details>'+
-    '<p class="fineprint">Источник: '+(ai?'ИИ-разбор твоих фото':(local?'твои данные':'<a href="https://world.openfoodfacts.org/product/'+esc(b)+'" target="_blank" rel="noopener">Open Food Facts</a> (ODbL)'))+'. Оценка информационная, не медицинская рекомендация.</p>'+
+    '<p class="fineprint">Источник: '+(ai?'разбор твоих фото':(local?'твои данные':'<a href="https://world.openfoodfacts.org/product/'+esc(b)+'" target="_blank" rel="noopener">Open Food Facts</a> (ODbL)'))+'. Оценка информационная, не медицинская рекомендация.</p>'+
   '</div>';
   $('skeleton').classList.add('hidden');c.classList.remove('hidden');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -614,6 +749,7 @@ function renderProduct(){
   $('favBtn').onclick=()=>{let f=getFavs();f=f.includes(b)?f.filter(x=>x!==b):[...f,b];store.set('favs',f);$('favBtn').textContent=f.includes(b)?'⭐ В избранном':'☆ Сохранить'};
   $('reAiBtn').onclick=()=>renderAiFallback(b,p);
   $('altBtn').onclick=loadAlternatives;
+  const fo=$('fixOcr');if(fo)fo.onclick=()=>renderManual(b,p);
 }
 $('productCard').addEventListener('click',e=>{
   const chip=e.target.closest('[data-add]');if(chip)openSheet(chip.dataset.add);
@@ -636,7 +772,7 @@ async function loadAlternatives(){
     box.innerHTML=alts.length?alts.map(({x,s})=>'<div class="alt" data-alt="'+esc(x.code)+'">'+(x.image_front_small_url?'<img src="'+esc(x.image_front_small_url)+'">':'')+'<div class="nm"><b>'+esc(x.product_name_ru||x.product_name||'Без названия')+'</b><span style="color:var(--muted)">'+esc(x.brands||'')+'</span></div><span class="pill" style="background:'+getColorForScore(s.score)+';color:'+contrastText(getColorForScore(s.score))+'">'+s.score+'</span></div>').join(''):'<p style="color:var(--muted);font-size:13px;padding:10px 0">Заметно лучших вариантов не нашлось 🤷</p>';
   }catch(e){box.innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0">Поиск недоступен (лимит OFF). Попробуй через минуту.</p>'}}
 
-/* ===== ФОТО-РАЗБОР ИИ ===== */
+/* ===== ФОТО-РАЗБОР ===== */
 function shotBlock(key,title,hint){
   const val=aiShots[key];
   return'<div class="shot'+(val?' done':'')+'" id="shot-'+key+'">'+(val?'<img src="'+val+'" alt="">':'')+
@@ -645,79 +781,121 @@ function shotBlock(key,title,hint){
 function renderAiFallback(b,pre){
   $('skeleton').classList.add('hidden');
   const c=$('productCard');c.classList.remove('hidden');
-  aiShots={front:(pre&&pre._photo)||null,ing:null,nut:null};
-  const noPuter=(typeof puter==='undefined'||!puter.ai);
+  aiShots={front:(pre&&pre._photo)||null,ing:null,nut:null};aiCancel=false;
+  const mode=aiMode();
   c.innerHTML=
   '<div class="card"><div class="prod-head"><div style="font-size:38px">📸</div><div><h2>'+(pre?'Улучшить разбор по фото':'Нет в Open Food Facts')+'</h2><p>Штрихкод '+esc(b)+'</p></div></div>'+
-  '<div class="banner ai">Сделай 2–3 фото этикетки — ИИ-эксперт по питанию прочитает состав, найдёт полезные и вредные свойства и объяснит вердикт. Оценка считается локальным движком по EFSA/ВОЗ.</div>'+
-  (noPuter?'<div class="banner warn">ИИ-шлюз не загрузился (нет интернета или блокировка). Проверь сеть и обнови страницу.</div>':'')+
+  '<div class="banner ai">Сделай 2–3 фото этикетки. Разбор без регистрации: свободная ИИ-модель, а если она недоступна — нейросетевой OCR и правила EFSA/ВОЗ прямо на телефоне.</div>'+
   '<h3 class="sec"><span class="step ai">1</span> Фото этикетки</h3>'+
-  '<div class="grid2">'+shotBlock('front','📦 Название','Лицевая сторона: бренд и название товара')+shotBlock('ing','🧾 Состав','Раздел «Состав» — крупно, без бликов')+'</div>'+
+  '<div class="grid2">'+shotBlock('front','📦 Название','Лицевая сторона: бренд и название')+shotBlock('ing','🧾 Состав','Раздел «Состав» — крупно, без бликов')+'</div>'+
   '<div style="margin-top:10px">'+shotBlock('nut','📊 КБЖУ (желательно)','Таблица пищевой ценности на 100 г')+'</div>'+
-  '<p class="fineprint">Фото сжимаются на телефоне и уходят только в ИИ-модель. При первом запуске откроется окно входа Puter — это бесплатный шлюз, ключи не нужны.</p>'+
-  '<button class="btn ai" id="aiRun" style="margin-top:6px">🤖 Анализировать состав</button>'+
+  '<label class="f">Способ разбора</label>'+
+  '<select id="aiModeLocal"><option value="auto"'+(mode==='auto'?' selected':'')+'>Авто: ИИ → потом на телефоне</option><option value="cloud"'+(mode==='cloud'?' selected':'')+'>Только ИИ-модель</option><option value="local"'+(mode==='local'?' selected':'')+'>Только на телефоне (офлайн)</option></select>'+
+  '<button class="btn ai" id="aiRun" style="margin-top:12px">🤖 Анализировать состав</button>'+
+  '<button class="btn ghost hidden" id="aiStop" style="margin-top:8px">⏹ Отменить</button>'+
   '<div id="aiStatus"></div>'+
   '<div style="display:flex;gap:9px;margin-top:10px"><button class="btn ghost" id="aiManual" style="flex:1">✍️ Ввести вручную</button><a class="btn ghost" style="flex:1;text-align:center;text-decoration:none;line-height:1.2" target="_blank" rel="noopener" href="https://world.openfoodfacts.org/product/'+esc(b)+'">➕ Добавить в OFF</a></div>'+
-  '</div>'+
-  '<div class="card"><h3 class="sec">🛒 Найти товар в магазинах</h3><div class="chips">'+storeLinksHtml(pre?(pre.product_name_ru||pre.product_name||''):'',b)+'</div><p class="fineprint">Можно подсмотреть состав и КБЖУ на странице магазина, а потом сфотографировать этикетку.</p></div>';
+  '<p class="fineprint">Фото сжимаются на телефоне. Ключи, аккаунты и номер телефона не нужны.</p></div>'+
+  '<div class="card"><h3 class="sec">🛒 Найти товар в магазинах</h3><div class="chips">'+storeLinksHtml(pre?(pre.product_name_ru||pre.product_name||''):'',b)+'</div></div>';
   c.querySelectorAll('input[data-shot]').forEach(inp=>inp.onchange=async e=>{
     const key=inp.dataset.shot,file=e.target.files&&e.target.files[0];if(!file)return;
-    try{const url=await compressImage(file,key==='front'?900:1400);aiShots[key]=url;
+    try{const url=await compressImage(file,key==='front'?800:1400);aiShots[key]=url;
       const box=$('shot-'+key);box.classList.add('done');
       let img=box.querySelector('img');if(!img){img=document.createElement('img');box.insertBefore(img,box.firstChild)}
       img.src=url;beep(660);buzz(30);updateAiBtn();
     }catch(err){toast('Не удалось прочитать фото')}});
+  $('aiModeLocal').onchange=e=>{store.set('aimode',e.target.value);$('aiMode').value=e.target.value;toast('Способ разбора сохранён')};
   $('aiRun').onclick=()=>runAi(b);
+  $('aiStop').onclick=()=>{aiCancel=true;aiStatus('<div class="banner warn" style="margin-top:12px">Отменено</div>')};
   $('aiManual').onclick=()=>renderManual(b,pre);
   updateAiBtn();
 }
-function updateAiBtn(){const btn=$('aiRun');if(btn)btn.disabled=aiBusy||(!aiShots.ing&&!aiShots.front)}
+function updateAiBtn(){const btn=$('aiRun');if(btn)btn.disabled=aiBusy||(!aiShots.ing&&!aiShots.front&&!aiShots.nut);
+  const st=$('aiStop');if(st)st.classList.toggle('hidden',!aiBusy)}
 function aiStatus(html){const s=$('aiStatus');if(s)s.innerHTML=html}
+function aiProg(pct,label){aiStatus('<div class="banner info" style="margin-top:12px">'+esc(label)+' '+pct+'%</div><div class="prog"><i style="width:'+pct+'%"></i></div>')}
 async function runAi(b){
   if(aiBusy)return;
-  if(!aiShots.ing&&!aiShots.front){toast('Сначала сделай фото состава');return}
-  if(typeof puter==='undefined'||!puter.ai){toast('ИИ-шлюз недоступен — обнови страницу');return}
-  aiBusy=true;updateAiBtn();
   const imgs=[aiShots.front,aiShots.ing,aiShots.nut].filter(Boolean);
-  aiStatus('<div class="banner info dots" style="margin-top:12px">ИИ читает этикетку</div>');
-  const prompt='Продукт со штрихкодом '+b+'. На фото: 1) лицевая сторона, 2) состав, 3) таблица пищевой ценности (порядок может отличаться). Извлеки название, бренд, категорию, полный состав, все E-добавки, нутриенты на 100 г, аллергены. Оцени полезные и вредные свойства состава и дай краткую рекомендацию. Верни только JSON по схеме.';
+  if(!imgs.length){toast('Сначала сделай фото этикетки');return}
+  const mode=aiMode();aiBusy=true;aiCancel=false;updateAiBtn();
+  const prompt='Продукт со штрихкодом '+b+'. На фото лицевая сторона, состав и таблица пищевой ценности (порядок может отличаться). Извлеки название, бренд, категорию, полный состав, все E-добавки, нутриенты на 100 г, аллергены. Опиши полезные и вредные свойства состава. Верни только JSON по схеме.';
+  let ocrText='',engine='',json=null;
   try{
-    let text=await callVision(prompt,imgs,aiModel());
-    let j;
-    try{j=parseAiJson(text)}
-    catch(e){
-      aiStatus('<div class="banner info dots" style="margin-top:12px">Уточняю формат ответа</div>');
-      text=await callVision(prompt+'\n\nВЕРНИ ТОЛЬКО ВАЛИДНЫЙ JSON, БЕЗ ТЕКСТА ВОКРУГ.',imgs,aiModel());
-      j=parseAiJson(text);
+    if(mode!=='local'){
+      aiStatus('<div class="banner info dots" style="margin-top:12px">ИИ-модель читает этикетку</div>');
+      try{const t=await aiVision(imgs,prompt);json=parseAiJson(t);engine='cloud'}catch(e){json=null}
     }
-    aiStatus('<div class="banner info dots" style="margin-top:12px">Считаю оценку по EFSA/ВОЗ</div>');
-    const p=buildFromAi(b,j,aiShots.front);
+    if(!json){
+      if(mode==='cloud'){
+        aiStatus('<div class="banner warn" style="margin-top:12px">ИИ-шлюз недоступен или лимит исчерпан. Переключись на «Только на телефоне» — работает без интернета и регистрации.</div>');
+        aiBusy=false;updateAiBtn();return;
+      }
+      aiProg(0,'Распознаю этикетку на телефоне');
+      try{ocrText=await ocrImages([aiShots.ing,aiShots.nut,aiShots.front].filter(Boolean),p=>aiProg(p,'Распознаю этикетку на телефоне'))}
+      catch(e){
+        aiStatus('<div class="banner red" style="margin-top:12px">'+(String(e.message)==='cancelled'?'Отменено':'OCR не загрузился — проверь интернет один раз или введи состав вручную')+'</div>');
+        aiBusy=false;updateAiBtn();return;
+      }
+      if(aiCancel){aiBusy=false;updateAiBtn();return}
+      const info=parseLabel(ocrText);
+      if(!info.ing&&!Object.keys(info.nut).length&&!info.adds.length){
+        aiStatus('<div class="banner warn" style="margin-top:12px">Этикетка не читается. Пересними состав крупнее, при ровном свете, без бликов — или введи вручную.</div><pre class="ocr">'+esc(ocrText.slice(0,1200))+'</pre>');
+        aiBusy=false;updateAiBtn();return;
+      }
+      if(mode==='auto'&&ocrText.length>40){
+        aiStatus('<div class="banner info dots" style="margin-top:12px">ИИ разбирает распознанный текст</div>');
+        try{
+          const tp='Штрихкод '+b+'. Текст этикетки:\n'+ocrText.slice(0,2500)+'\n\nВерни только JSON по схеме.';
+          const t=await aiText(tp);json=parseAiJson(t);engine='cloud';
+        }catch(e){json=null}
+      }
+      if(!json){
+        const p=buildFromOcr(b,info,aiShots.front,ocrText);
+        return finishAi(b,p,'local');
+      }
+      const p=buildFromAi(b,json,aiShots.front,ocrText,engine||'cloud');
+      if(!p.ingredients.length&&!Object.keys(p.nutriments).length){
+        const p2=buildFromOcr(b,info,aiShots.front,ocrText);return finishAi(b,p2,'local');
+      }
+      return finishAi(b,p,engine||'cloud');
+    }
+    const p=buildFromAi(b,json,aiShots.front,'',engine);
     if(!p.ingredients.length&&!Object.keys(p.nutriments).length){
-      aiStatus('<div class="banner warn" style="margin-top:12px">ИИ не смог разобрать этикетку. Пересними состав крупнее, при ровном свете, без бликов — или введи данные вручную.</div>');
+      aiStatus('<div class="banner warn" style="margin-top:12px">ИИ не разобрал этикетку. Пересними состав крупнее или введи вручную.</div>');
       aiBusy=false;updateAiBtn();return;
     }
-    const s=scoreProduct(p);
-    localSet(b,p);current={b,p,scored:s,local:true};pushHist(b,p,s);
-    beep(980);buzz([40,40,40]);renderProduct();toast('ИИ-разбор готов и сохранён');
+    finishAi(b,p,engine);
   }catch(err){
-    const msg=String(err&&err.message||err);
-    aiStatus('<div class="banner red" style="margin-top:12px">ИИ недоступен: '+esc(msg==='timeout'?'модель не ответила за 90 секунд':msg==='no-puter'?'шлюз не загрузился':'ошибка запроса или вход отменён')+'. Попробуй ещё раз, смени модель в настройках или введи состав вручную.</div>');
-  }finally{aiBusy=false;updateAiBtn()}
+    aiStatus('<div class="banner red" style="margin-top:12px">Не удалось разобрать: '+esc(String(err&&err.message||err))+'. Попробуй «Только на телефоне» или введи состав вручную.</div>');
+    aiBusy=false;updateAiBtn();
+  }
+}
+function finishAi(b,p,engine){
+  const s=scoreProduct(p);
+  localSet(b,p);current={b,p,scored:s,local:true};pushHist(b,p,s);
+  beep(980);buzz([40,40,40]);aiBusy=false;renderProduct();
+  toast(engine==='local'?'Разобрано на телефоне и сохранено':'ИИ-разбор готов и сохранён');
+}
+function parseAiJson(text){
+  let t=String(text||'').replace(/```json/gi,'```').split('```').join('').trim();
+  const a=t.indexOf('{'),b=t.lastIndexOf('}');
+  if(a>=0&&b>a)t=t.slice(a,b+1);
+  return JSON.parse(t);
 }
 
-/* ===== РУЧНОЙ ВВОД (запасной путь) ===== */
-let mPhoto='';
+/* ===== РУЧНОЙ ВВОД ===== */
 function renderManual(b,pre){
   $('skeleton').classList.add('hidden');const c=$('productCard');c.classList.remove('hidden');
-  mPhoto=(pre&&(pre._photo||pre.image_front_url))||'';
   const n=pre?(pre.nutriments||{}):{},val=v=>v!=null?v:'';
   const catOpts=[['','Прочее'],['en:beverages','Напитки'],['en:dairies','Молочные'],['en:meats','Мясо / колбасы'],['en:fish-and-seafood','Рыба'],['en:sweets','Сладости / снеки'],['en:cereals-and-potatoes','Крупы'],['en:breads','Хлеб'],['en:fruits-and-vegetables','Овощи / фрукты']];
   const preCat=pre?((pre.categories_tags||[]).find(x=>catOpts.some(o=>o[0]===x))||''):'';
+  const preIng=pre?(pre.ingredients_text_ru||pre.ingredients_text||(pre._ocr||'')):'';
   c.innerHTML='<div class="card"><h3 class="sec">✍️ Ввод вручную · '+esc(b)+'</h3>'+
   '<div id="mForm"><label class="f">Название</label><input id="mName" value="'+esc(pre?(pre.product_name_ru||pre.product_name||''):'')+'">'+
   '<label class="f">Бренд</label><input id="mBrand" value="'+esc(pre?(pre.brands||''):'')+'">'+
   '<label class="f">Категория</label><select id="mCat">'+catOpts.map(o=>'<option value="'+o[0]+'"'+(o[0]===preCat?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>'+
-  '<label class="f">Состав</label><textarea id="mIng">'+esc(pre?(pre.ingredients_text_ru||pre.ingredients_text||''):'')+'</textarea>'+
+  '<label class="f">Состав</label><textarea id="mIng">'+esc(preIng)+'</textarea>'+
   '<label class="f">На 100 г</label><div class="grid3">'+
   '<div><label class="f" style="margin-top:0">Сахара</label><input inputmode="decimal" id="mSug" value="'+val(n['sugars_100g'])+'"></div>'+
   '<div><label class="f" style="margin-top:0">Соль</label><input inputmode="decimal" id="mSalt" value="'+val(n['salt_100g'])+'"></div>'+
@@ -730,14 +908,16 @@ function renderManual(b,pre){
   '<div style="display:flex;gap:9px;margin-top:14px"><button class="btn" id="mSave" style="flex:2">⚡ Оценить и сохранить</button><button class="btn ghost" id="mBack" style="flex:1">← К фото</button></div></div>';
   const num=v=>{const s=String(v||'').trim().replace(',','.');if(!s)return undefined;const x=parseFloat(s);return isFinite(x)?x:undefined};
   const build=()=>{const ing=$('mIng').value.trim(),parts=ing.split(/[,;\n]/).map(s=>s.trim()).filter(s=>s.length>1);
-    const set=new Set();for(const m of ing.toLowerCase().matchAll(/[eе]\s?-?\s*(\d{3,4})\s*([a-zа-я])?/g))set.add('e'+m[1]+(m[2]||''));
-    const nut={};const put=(k,v)=>{if(v!=null)nut[k]=v};
+    const info=parseLabel(ing);const nut={};const put=(k,v)=>{if(v!=null)nut[k]=v};
     put('sugars_100g',num($('mSug').value));put('salt_100g',num($('mSalt').value));put('saturated-fat_100g',num($('mSat').value));
     put('proteins_100g',num($('mProt').value));put('fiber_100g',num($('mFib').value));put('energy-kcal_100g',num($('mKcal').value));
     const cat=$('mCat').value;
-    return{product_name:$('mName').value.trim()||('Товар '+b),brands:$('mBrand').value.trim(),ingredients_text:ing,
-      ingredients:parts.map(t=>({text:t})),additives_tags:[...set].map(x=>'en:'+x),nutriments:nut,
-      categories_tags:cat?[cat]:[],labels_tags:[],_local:true,_photo:mPhoto,_ts:Date.now()}};
+    const p={product_name:$('mName').value.trim()||('Товар '+b),brands:$('mBrand').value.trim(),ingredients_text:ing,
+      ingredients:parts.map(t=>({text:t})),additives_tags:info.adds.map(x=>'en:'+x),nutriments:nut,
+      categories_tags:cat?[cat]:[],labels_tags:[],_local:true,_photo:(pre&&pre._photo)||'',_ts:Date.now()};
+    const ex=localExpert(p);
+    p._ai={benefits:ex.benefits,harms:ex.harms,check_on_label:ex.check,notes:'Состав введён вручную, разбор по правилам EFSA/ВОЗ.',confidence:'medium',engine:'local',model:'Правила EFSA/ВОЗ'};
+    return p};
   const upd=()=>{const s=scoreProduct(build()),col=getColorForScore(s.score),C=2*Math.PI*52;
     $('mPrev').innerHTML='<div class="mini"><svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" style="stroke:var(--line);stroke-width:10"/><circle cx="60" cy="60" r="52" stroke="'+col+'" fill="none" style="stroke-width:10" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-s.score/100))+'" transform="rotate(-90 60 60)"/></svg><div class="mini-num" style="color:'+col+'">'+s.score+'</div></div><div style="flex:1"><span class="pill" style="background:'+col+';color:'+contrastText(col)+'">'+vIcon(s.score)+' '+V_TEXT[s.verdict][0]+'</span><p style="font-size:12.5px;color:var(--muted);margin-top:8px">'+(s.confidence==='high'?'Данных достаточно':'Добавь состав и КБЖУ для точности')+'</p></div>'};
   $('mForm').addEventListener('input',upd);
@@ -758,49 +938,91 @@ $('recent').addEventListener('click',e=>{const c=e.target.closest('[data-open]')
 const EXAMPLES=[['3017620422003','Nutella'],['3229820019307','Овсянка'],['5449000000996','Coca-Cola'],['5449000131805','Cola Zero']];
 $('examples').innerHTML=EXAMPLES.map(([b,n])=>'<div class="chip" data-open="'+b+'"><span class="dot" style="background:var(--leaf)"></span>'+n+'</div>').join('');
 $('examples').addEventListener('click',e=>{const c=e.target.closest('[data-open]');if(c)loadProduct(c.dataset.open)});
-function renderHist(){
+function currentList(){
   const q=($('histSearch').value||'').toLowerCase(),favs=getFavs(),sort=$('histSort').value;
   let h=getHist();
   if(histFilter==='fav')h=h.filter(x=>favs.includes(x.b));
   else if(histFilter==='ai')h=h.filter(x=>x.ai);
   else if(histFilter!=='all')h=h.filter(x=>x.verdict===histFilter);
   if(q)h=h.filter(x=>x.name.toLowerCase().includes(q)||x.b.includes(q));
-  h=[...h].sort((a,b)=>sort==='scoreDesc'?b.score-a.score:sort==='scoreAsc'?a.score-b.score:sort==='name'?a.name.localeCompare(b.name,'ru'):b.ts-a.ts);
-  $('histList').innerHTML=h.length?h.map(x=>'<div class="hist-item" data-b="'+esc(x.b)+'"><span class="dot" style="background:'+getColorForScore(x.score)+';width:14px;height:14px;flex-basis:14px"></span><div class="nm"><b>'+(favs.includes(x.b)?'⭐ ':'')+(x.ai?'🤖 ':'')+esc(x.name)+'</b><i>'+esc(x.brand)+' · '+new Date(x.ts).toLocaleDateString('ru-RU')+'</i></div><span class="pill" style="background:'+getColorForScore(x.score)+';color:'+contrastText(getColorForScore(x.score))+'">'+vIcon(x.score)+' '+x.score+'</span><button class="del" data-del="'+esc(x.b)+'">✕</button></div>').join(''):'<p style="color:var(--muted);text-align:center;padding:30px 0;font-size:14px">Пусто. Отсканируй первый продукт 📷</p>';
+  return [...h].sort((a,b)=>sort==='scoreDesc'?b.score-a.score:sort==='scoreAsc'?a.score-b.score:sort==='name'?a.name.localeCompare(b.name,'ru'):b.ts-a.ts);
+}
+function renderHist(){
+  const favs=getFavs(),h=currentList();
+  $('bulkBar').classList.toggle('hidden',!selectMode);
+  $('selBtn').textContent=selectMode?'✅ Режим выбора':'☑️ Выбрать';
+  $('bulkDel').textContent='Удалить выбранные ('+selected.size+')';
+  $('histList').innerHTML=h.length?h.map(x=>'<div class="hist-item'+(selected.has(x.b)?' sel':'')+'" data-b="'+esc(x.b)+'">'+
+    (selectMode?'<input type="checkbox" data-check="'+esc(x.b)+'"'+(selected.has(x.b)?' checked':'')+'>':'<span class="dot" style="background:'+getColorForScore(x.score)+';width:14px;height:14px;flex-basis:14px"></span>')+
+    '<div class="nm"><b>'+(favs.includes(x.b)?'⭐ ':'')+(x.ai?'🤖 ':'')+esc(x.name)+'</b><i>'+esc(x.brand)+' · '+new Date(x.ts).toLocaleDateString('ru-RU')+'</i></div>'+
+    '<span class="pill" style="background:'+getColorForScore(x.score)+';color:'+contrastText(getColorForScore(x.score))+'">'+vIcon(x.score)+' '+x.score+'</span>'+
+    (selectMode?'':'<button class="del" data-del="'+esc(x.b)+'">✕</button>')+'</div>').join(''):'<p style="color:var(--muted);text-align:center;padding:30px 0;font-size:14px">Пусто. Отсканируй первый продукт 📷</p>';
 }
 $('histList').addEventListener('click',e=>{
+  const chk=e.target.closest('[data-check]');
+  if(chk){const b=chk.dataset.check;if(selected.has(b))selected.delete(b);else selected.add(b);renderHist();return}
   const del=e.target.closest('[data-del]');
   if(del){const b=del.dataset.del,h=getHist(),item=h.find(x=>x.b===b);
     store.set('hist',h.filter(x=>x.b!==b));renderHist();renderRecent();
     toast('Удалено из истории','Отменить',()=>{if(item){store.set('hist',[item,...getHist()].slice(0,150));renderHist();renderRecent()}});return}
+  if(selectMode){const row=e.target.closest('[data-b]');if(row){const b=row.dataset.b;if(selected.has(b))selected.delete(b);else selected.add(b);renderHist()}return}
   const item=e.target.closest('[data-b]');if(item)loadProduct(item.dataset.b)});
+$('selBtn').onclick=()=>{selectMode=!selectMode;selected.clear();renderHist()};
+$('bulkCancel').onclick=()=>{selectMode=false;selected.clear();renderHist()};
+$('bulkDel').onclick=()=>{
+  if(!selected.size){toast('Ничего не выбрано');return}
+  const snap=getHist(),ids=[...selected];
+  store.set('hist',snap.filter(x=>!selected.has(x.b)));
+  selected.clear();selectMode=false;renderHist();renderRecent();
+  toast('Удалено: '+ids.length,'Отменить',()=>{store.set('hist',snap);renderHist();renderRecent()});
+};
 $('histSearch').oninput=renderHist;$('histSort').onchange=renderHist;
 $('histFilters').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;
   histFilter=b.dataset.f;document.querySelectorAll('#histFilters button').forEach(x=>x.classList.toggle('on',x===b));renderHist()});
+function renderViews(){
+  const v=getViews();
+  $('views').innerHTML=v.length?v.map((x,i)=>'<span class="chip" data-view="'+i+'">'+esc(x.name)+' <b data-vdel="'+i+'" style="cursor:pointer;color:var(--muted)">✕</b></span>').join(''):'<span class="fineprint" style="margin:0">Сохрани часто используемый фильтр как «вид»</span>';
+}
+$('views').addEventListener('click',e=>{
+  const del=e.target.closest('[data-vdel]');
+  if(del){const v=getViews();v.splice(+del.dataset.vdel,1);store.set('views',v);renderViews();return}
+  const c=e.target.closest('[data-view]');
+  if(c){const v=getViews()[+c.dataset.view];if(!v)return;
+    histFilter=v.f;$('histSort').value=v.sort;$('histSearch').value=v.q;
+    document.querySelectorAll('#histFilters button').forEach(x=>x.classList.toggle('on',x.dataset.f===v.f));
+    renderHist();toast('Вид применён')}
+});
+$('saveViewBtn').onclick=()=>{
+  const name=prompt('Название вида (например: «Вредное за месяц»)');
+  if(!name)return;
+  const v=getViews();v.push({name:name.slice(0,28),f:histFilter,sort:$('histSort').value,q:$('histSearch').value});
+  store.set('views',v.slice(0,8));renderViews();toast('Вид сохранён')};
 
 /* ===== НАСТРОЙКИ ===== */
 function renderSettings(){
   const my=store.get('allerg',[]),diet=store.get('diet',{vegan:false,vegetarian:false,sugarfree:false});
   $('allergList').innerHTML=ALLERGENS.map(([tag,label])=>'<label class="set-row">'+label+'<input type="checkbox" data-tag="'+tag+'"'+(my.includes(tag)?' checked':'')+'></label>').join('');
   $('dietList').innerHTML=DIETS.map(([k,label])=>'<label class="set-row">'+label+'<input type="checkbox" data-diet="'+k+'"'+(diet[k]?' checked':'')+'></label>').join('');
-  $('aiModel').value=aiModel();
+  $('aiMode').value=aiMode();$('aiModel').value=aiModel();
 }
+$('aiMode').onchange=e=>{store.set('aimode',e.target.value);toast('Способ разбора сохранён')};
 $('aiModel').onchange=e=>{store.set('aimodel',e.target.value);toast('Модель сохранена')};
+$('reloadModels').onclick=async()=>{const ok=await loadModels();toast(ok?'Список моделей обновлён':'Шлюз недоступен — оставлены базовые модели')};
 $('allergList').addEventListener('change',()=>{store.set('allerg',[...document.querySelectorAll('#allergList input:checked')].map(i=>i.dataset.tag));toast('Сохранено')});
 $('dietList').addEventListener('change',()=>{const d={};document.querySelectorAll('#dietList input').forEach(i=>d[i.dataset.diet]=i.checked);store.set('diet',d);toast('Сохранено')});
-$('expBtn').onclick=()=>{const data={hist:getHist(),favs:getFavs(),local:store.get('local',{}),exp:store.get('exp',{}),allerg:store.get('allerg',[]),diet:store.get('diet',{})};
+$('expBtn').onclick=()=>{const data={hist:getHist(),favs:getFavs(),local:store.get('local',{}),exp:store.get('exp',{}),allerg:store.get('allerg',[]),diet:store.get('diet',{}),views:getViews()};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download='food-scanner-data.json';a.click();URL.revokeObjectURL(a.href);toast('Файл скачан')};
 $('impFile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const d=JSON.parse(r.result);['hist','favs','local','exp','allerg','diet'].forEach(k=>{if(d[k]!==undefined)store.set(k,d[k])});
-    renderSettings();renderRecent();toast('Данные загружены')}catch(err){toast('Файл повреждён')}};r.readAsText(f)};
+  r.onload=()=>{try{const d=JSON.parse(r.result);['hist','favs','local','exp','allerg','diet','views'].forEach(k=>{if(d[k]!==undefined)store.set(k,d[k])});
+    renderSettings();renderRecent();renderViews();toast('Данные загружены')}catch(err){toast('Файл повреждён')}};r.readAsText(f)};
 $('clearHist').onclick=()=>{const snap=getHist();store.set('hist',[]);store.set('favs',[]);renderRecent();renderHist();
   toast('История очищена','Отменить',()=>{store.set('hist',snap);renderRecent();renderHist()})};
-$('clearCache').onclick=()=>{store.set('cache',{});store.set('local',{});toast('Кэш и ИИ-товары очищены')};
+$('clearCache').onclick=()=>{store.set('cache',{});store.set('local',{});toast('Кэш и разобранные товары очищены')};
 
 /* ===== СТАРТ ===== */
 applyTheme();$('soundBtn').textContent=soundOn?'🔊':'🔇';
-renderRecent();renderSettings();showScreen('scan');
+renderRecent();renderSettings();renderViews();showScreen('scan');
 </script>
 </body>
 </html>
