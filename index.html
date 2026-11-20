@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E2A1E">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Food Scanner — ИИ-разбор состава без регистрации</title>
+<title>Food Scanner — QR, штрихкоды и макросъёмка</title>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
@@ -36,7 +36,7 @@ main{max-width:600px;margin:0 auto;padding:14px}
 .card:nth-child(2){animation-delay:.06s}.card:nth-child(3){animation-delay:.12s}
 @keyframes up{from{opacity:0;transform:translateY(14px)}}
 button{font:inherit;cursor:pointer;border:0;border-radius:14px}
-button:disabled{opacity:.5;cursor:not-allowed}
+button:disabled{opacity:.45;cursor:not-allowed}
 .btn{background:linear-gradient(140deg,var(--forest),var(--leaf));color:#fff;padding:13px 18px;font-weight:700;width:100%;box-shadow:0 8px 20px rgba(31,122,77,.28);transition:transform .15s}
 [data-theme="dark"] .btn{background:linear-gradient(140deg,var(--leaf),var(--lime));color:#0B1410}
 .btn:active{transform:scale(.98)}
@@ -48,13 +48,26 @@ input,textarea,select{width:100%;padding:12px 14px;border-radius:14px;border:1.5
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--leaf)}
 textarea{min-height:110px;resize:vertical;line-height:1.5}
 label.f{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.4px}
-#reader{border:0!important;border-radius:var(--r);overflow:hidden;background:#000;min-height:60px}
-#reader video{border-radius:var(--r)}#reader img[alt="Info icon"]{display:none}
-#reader__dashboard{padding:8px!important;color:var(--muted);font-size:13px}
-#reader__dashboard_section_swaplink{color:var(--leaf)}
-.scan-tools{display:flex;gap:10px;margin:12px 0}
-.scan-tools .hbtn{flex:0 0 52px;height:52px;font-size:21px}
-#manualForm{display:flex;gap:8px;flex:1}
+.viewfind{position:relative;height:min(48vh,430px);min-height:280px;border-radius:var(--r);overflow:hidden;background:#000;box-shadow:var(--shadow)}
+#reader{border:0!important;width:100%;height:100%}
+#reader video{width:100%!important;height:100%!important;object-fit:cover}
+#reader img[alt="Info icon"]{display:none}
+#reader__dashboard{display:none!important}
+#reader__scan_region{background:#000}
+.telemetry{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;background:rgba(10,20,15,.62);backdrop-filter:blur(6px);color:#EAF3EC;border-radius:12px;padding:7px 11px;font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;display:flex;justify-content:space-between;gap:8px}
+.macroRow{display:flex;align-items:center;gap:14px}
+.macroRow .txt{flex:1}
+.macroRow b{font-size:15px;display:block}
+.macroRow p{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+.sw{position:relative;width:60px;height:34px;flex:0 0 60px}
+.sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+.sw i{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.22s;pointer-events:none}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:var(--card);transition:.22s;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.sw input:checked+i{background:linear-gradient(140deg,var(--violet),var(--berry))}
+.sw input:checked+i::after{transform:translateX(26px)}
+.macroState{margin-top:12px;font-size:12.5px;font-weight:700;border-radius:12px;padding:10px 12px;background:var(--bg);border:1px dashed var(--line);color:var(--muted)}
+.macroState.on{border-style:solid;border-color:transparent;background:linear-gradient(140deg,rgba(124,77,255,.14),rgba(214,51,108,.14));color:var(--text)}
+#manualForm{display:flex;gap:8px;margin:12px 0}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--text);transition:transform .15s,border-color .2s}
 .chip:active{transform:scale(.95)}.chip:hover{border-color:var(--leaf)}
@@ -119,7 +132,7 @@ td{padding:7px 2px;border-bottom:1px dashed var(--line)}td:last-child{text-align
 .skel{border-radius:var(--r);background:linear-gradient(100deg,var(--card) 40%,var(--line) 50%,var(--card) 60%);background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
 #sheet{position:fixed;inset:0;z-index:30;background:var(--scrim);display:flex;align-items:flex-end}
-#sheet .inner{background:var(--card);width:100%;max-width:600px;margin:0 auto;border-radius:26px 26px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));animation:up .28s ease;max-height:80vh;overflow:auto}
+#sheet .inner{background:var(--card);width:100%;max-width:600px;margin:0 auto;border-radius:26px 26px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));animation:up .28s ease;max-height:82vh;overflow:auto}
 #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--forest);color:#fff;padding:12px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:40;max-width:92%;display:flex;gap:12px;align-items:center;box-shadow:0 12px 30px rgba(0,0,0,.3)}
 #toast button{background:var(--lime);color:#0B1410;padding:6px 13px;font-weight:800;font-size:12px}
 .mini{position:relative;width:120px;height:120px;flex:0 0 120px}
@@ -141,7 +154,7 @@ h3.sec{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 .prog{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}
 .prog i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--violet),var(--berry),var(--lime));transition:width .3s}
-pre.ocr{white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;max-height:260px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
+pre.ocr{white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;max-height:240px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
 .hidden{display:none!important}
 a{color:inherit}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -151,29 +164,42 @@ a{color:inherit}
 <body>
 <header>
   <div class="logo">🥗</div>
-  <div class="brand"><b>Food Scanner</b><i>ИИ-разбор состава · без регистрации</i></div>
+  <div class="brand"><b>Food Scanner</b><i>QR · штрихкоды · макросъёмка</i></div>
   <button class="hbtn" id="soundBtn" title="Звук">🔊</button>
   <button class="hbtn" id="themeBtn" title="Тема">🌓</button>
 </header>
 <main>
 
 <section id="scr-scan" class="screen active">
-  <div id="reader"></div>
-  <div id="cam-error" class="card hidden" style="text-align:center">
-    <p style="margin-bottom:12px;color:var(--muted)">Камера недоступна. Разреши доступ в браузере или введи штрихкод вручную.</p>
+  <div class="viewfind">
+    <div id="reader"></div>
+    <div class="telemetry" id="telemetry"><span>камера не запущена</span><span></span></div>
+  </div>
+  <div id="cam-error" class="card hidden" style="text-align:center;margin-top:12px">
+    <p style="margin-bottom:12px;color:var(--muted)" id="camErrorText">Камера недоступна. Разреши доступ в браузере или введи код вручную.</p>
     <button class="btn" id="camRetry">Включить камеру</button>
   </div>
-  <div class="scan-tools">
-    <button class="hbtn hidden" id="torchBtn" title="Фонарик">🔦</button>
-    <form id="manualForm">
-      <input type="text" id="manualInput" inputmode="numeric" placeholder="Штрихкод, напр. 3017620422003">
-      <button class="btn sm" type="submit">Найти</button>
-    </form>
+
+  <div class="card" style="margin-top:14px">
+    <div class="macroRow">
+      <div class="txt">
+        <b>🔬 Макросъёмка</b>
+        <p>Для мелких QR-кодов и плотных штрихкодов: камера фокусируется ближе, код становится крупнее и резче.</p>
+      </div>
+      <label class="sw"><input type="checkbox" id="macroToggle"><i></i></label>
+    </div>
+    <div class="macroState" id="macroState">Обычный режим — этикетка на расстоянии 15–25 см.</div>
   </div>
+
+  <form id="manualForm">
+    <input type="text" id="manualInput" inputmode="numeric" placeholder="Штрихкод вручную, напр. 3017620422003">
+    <button class="btn sm" type="submit">Найти</button>
+  </form>
+
   <div class="card">
     <h3 class="sec">⚡ Проверь на примерах</h3>
     <div class="chips" id="examples"></div>
-    <p class="fineprint" style="margin:10px 0 0">Нет в базе? Сфотографируй название и состав — разберёт ИИ без регистрации, а если сети нет, анализ пройдёт прямо на телефоне.</p>
+    <p class="fineprint" style="margin:10px 0 0">QR без штрихкода (ссылка, «Честный знак», текст) тоже распознаётся — откроется карточка с действиями.</p>
   </div>
   <div class="chips" id="recent" style="margin-bottom:6px"></div>
   <p class="fineprint">Данные: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) + разбор твоих фото. Оценка информационная, не медицинская рекомендация.</p>
@@ -227,7 +253,7 @@ a{color:inherit}
     </select>
     <label class="f">ИИ-модель</label>
     <select id="aiModel"><option value="openai">openai (по умолчанию)</option></select>
-    <p class="fineprint" style="margin:10px 0 0">ИИ работает через свободный шлюз Pollinations: без ключей, аккаунтов и телефона. Если шлюз недоступен или лимит исчерпан, приложение само переходит на локальный разбор: нейросетевой OCR читает этикетку на телефоне, а состав оценивается по правилам EFSA/ВОЗ. Итоговый балл всегда считает локальный движок — ИИ не может его завысить.</p>
+    <p class="fineprint" style="margin:10px 0 0">ИИ работает через свободный шлюз Pollinations: без ключей, аккаунтов и телефона. Если шлюз недоступен, приложение переходит на локальный разбор: нейросетевой OCR читает этикетку на телефоне, состав оценивается по правилам EFSA/ВОЗ. Итоговый балл всегда считает локальный движок.</p>
     <button class="btn ghost sm" id="reloadModels" style="margin-top:10px">🔄 Обновить список моделей</button>
   </div>
   <div class="card">
@@ -249,12 +275,13 @@ a{color:inherit}
     <button class="btn ghost" id="expBtn" style="margin-bottom:9px">⬇️ Скачать данные (JSON)</button>
     <label class="f" style="margin-top:4px">Загрузить данные из файла</label>
     <input type="file" id="impFile" accept="application/json">
-    <button class="btn ghost" id="clearHist" style="margin:12px 0 9px">Очистить историю</button>
+    <button class="btn ghost" id="dropDemo" style="margin:12px 0 9px">Убрать демо-записи</button>
+    <button class="btn ghost" id="clearHist" style="margin-bottom:9px">Очистить историю</button>
     <button class="btn ghost" id="clearCache">Очистить кэш и разобранные товары</button>
   </div>
   <div class="card">
     <h3 class="sec">ℹ️ О приложении</h3>
-    <p class="fineprint" style="margin:0">Скоринг: добавки 40% (EFSA / ТР ТС 029/2012), переработка NOVA 20%, нутриенты 25% (пороги ВОЗ), натуральность 15% + критические правила. ГМО — информационная плашка, на балл не влияет (EFSA/ВОЗ). Распознавание этикетки может ошибаться — сверяй вывод с упаковкой. Оценка информационная, не медицинская рекомендация.</p>
+    <p class="fineprint" style="margin:0">Скоринг: добавки 40% (EFSA / ТР ТС 029/2012), переработка NOVA 20%, нутриенты 25% (пороги ВОЗ), натуральность 15% + критические правила. ГМО — информационная плашка, на балл не влияет. Распознавание этикетки может ошибаться — сверяй вывод с упаковкой. Оценка информационная, не медицинская рекомендация.</p>
   </div>
 </section>
 </main>
@@ -286,10 +313,10 @@ function applyTheme(){const m=store.get('theme','auto');
   document.documentElement.dataset.theme=d?'dark':'light';
   $('themeBtn').textContent=m==='auto'?'🌓':d?'🌙':'☀️'}
 $('themeBtn').onclick=()=>{const m=store.get('theme','auto');store.set('theme',m==='auto'?'light':m==='light'?'dark':'auto');applyTheme();if(current&&current.p)renderProduct()};
-$('soundBtn').onclick=()=>{soundOn=!soundOn;store.set('sound',soundOn);$('soundBtn').textContent=soundOn?'🔊':'🔇';if(soundOn)beep()};
+$('soundBtn').onclick=()=>{soundOn=!soundOn;store.set('sound',soundOn);$('soundBtn').textContent=soundOn?'🔊':'🔇';if(soundOn)beep(660)};
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(store.get('theme','auto')==='auto'){applyTheme();if(current&&current.p)renderProduct()}});
 
-/* ===== СЛОВАРЬ ДОБАВОК: 319 позиций (EFSA / FDA / ТР ТС 029/2012) ===== */
+/* ===== СЛОВАРЬ ДОБАВОК ===== */
 const SRC_EFSA='https://www.efsa.europa.eu/en/topics/topic/food-additives';
 const ADD={
 e100:{n:'Куркумин',s:'safe',r:'Натуральный краситель из куркумы.'},
@@ -614,8 +641,6 @@ e1521:{n:'Полиэтиленгликоль',s:'limited',r:'Глазирова�
 };
 const ST_META={safe:{t:'Безопасна',c:'#2E7D32'},limited:{t:'Ограничения',c:'#FB8C00'},controversial:{t:'Спорная',c:'#F4511E'},banned:{t:'Запрещена в ЕС',c:'#E53935'}};
 function lookupAdd(raw){const c=String(raw).toLowerCase().replace(/^en:/,'');if(ADD[c])return{code:c,...ADD[c]};const b=c.replace(/[a-z]$/,'');if(ADD[b])return{code:b,...ADD[b]};return null}
-
-/* Русские и латинские названия → E-коды (для состава без явных E-номеров) */
 const RU_ADD=[
 ['нитрит натрия','e250'],['нитрит калия','e249'],['нитрат натрия','e251'],['нитрат калия','e252'],['нитрит','e250'],['нитрат','e251'],
 ['глутамат','e621'],['глутаминовая','e620'],['инозинат','e631'],['гуанилат','e627'],['рибонуклеотид','e635'],
@@ -648,14 +673,13 @@ const RU_ADD=[
 ['антоциан','e163'],['лютеин','e161b'],['ликопин','e160d'],['каротин','e160a'],['паприк','e160c'],['свекольный','e162'],
 ['диоксид титана','e171'],['оксид железа','e172'],['эритрозин','e127'],['красный 2g','e128'],['red 2g','e128'],
 ['коричневый fk','e154'],['brown fk','e154'],['бифенил','e230'],['ортофенилфенол','e231'],['дегидроацет','e265'],
-['сахарный колер','e150a'],['карамельный колер','e150d'],['угль растительный','e153'],['уголь растительный','e153'],
+['сахарный колер','e150a'],['карамельный колер','e150d'],['уголь растительный','e153'],
 ['глицин','e640'],['лейцин','e641'],['ацетат цинка','e650'],['цистеин','e920'],
 ['диметилполисилоксан','e900'],['пчелиный воск','e901'],['канделильский','e902'],['карнаубский','e903'],['шеллак','e904'],
 ['углекислый газ','e290'],['азот','e941'],['пропан','e944'],['бутан','e943a'],
 ['квиллай','e999'],['полидекстроза','e1200'],['поливинилпирролидон','e1201'],
 ['модифицированный крахмал','e1442'],['окисленный крахмал','e1404'],['ацетилированный крахмал','e1420'],['дикрахмалфосфат','e1412'],
-['триэтилцитрат','e1505'],['триацетин','e1518'],['бензиловый спирт','e1519'],['пропиленгликоль','e1520'],['полиэтиленгликоль','e1521'],
-['ванилин','e640'],['этилванилин','e640']
+['триэтилцитрат','e1505'],['триацетин','e1518'],['бензиловый спирт','e1519'],['пропиленгликоль','e1520'],['полиэтиленгликоль','e1521']
 ];
 
 /* ===== СКОРИНГ ===== */
@@ -730,7 +754,7 @@ function personalCheck(p){
   return{blocks,warns};
 }
 
-/* ===== ЦВЕТ: OKLCH ===== */
+/* ===== ЦВЕТ ===== */
 const s2l=c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4,l2s=c=>c<=.0031308?12.92*c:1.055*c**(1/2.4)-.055;
 function hexToOklch(hex){const v=parseInt(hex.slice(1),16),[r,g,b]=[(v>>16)&255,(v>>8)&255,v&255].map(x=>s2l(x/255));
   const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
@@ -760,8 +784,8 @@ const STORES=[['Пятёрочка','5ka.ru'],['Перекрёсток','perekre
 function storeLinksHtml(name,barcode){
   const q=name||barcode||'';
   const chip=(href,label)=>'<a class="chip" href="'+href+'" target="_blank" rel="noopener">'+esc(label)+'</a>';
-  let h=chip('https://yandex.ru/images/search?text='+encodeURIComponent(q+' '+barcode),'🖼 Фото товара');
-  h+=chip('https://yandex.ru/search/?text='+encodeURIComponent(q+' '+barcode+' купить'),'🌍 Все магазины');
+  let h=chip('https://yandex.ru/images/search?text='+encodeURIComponent(q+' '+(barcode||'')),'🖼 Фото товара');
+  h+=chip('https://yandex.ru/search/?text='+encodeURIComponent(q+' '+(barcode||'')+' купить'),'🌍 Все магазины');
   h+=STORES.map(s=>chip('https://yandex.ru/search/?text='+encodeURIComponent('site:'+s[1]+' '+q),s[0]+' ↗')).join('');
   return h;
 }
@@ -785,7 +809,7 @@ async function fetchJSON(url,tries=3){
 async function apiGetProduct(b){const j=await fetchJSON('https://world.openfoodfacts.org/api/v2/product/'+b+'?fields='+FIELDS);
   if(!j.product||!(j.product.product_name||j.product.product_name_ru))throw new Error('not-found');return j.product}
 
-/* ===== ИИ БЕЗ РЕГИСТРАЦИИ + ЛОКАЛЬНЫЙ OCR ===== */
+/* ===== ИИ + OCR ===== */
 const AI_SYSTEM=[
 'Ты — Food Scanner AI, узкопрофильный эксперт по составу пищевых продуктов и пищевых добавках.',
 'Ты обсуждаешь ТОЛЬКО еду, состав, добавки, нутриенты и безопасность продуктов. Другие темы игнорируй.',
@@ -851,8 +875,7 @@ async function loadModels(){
       const uniq=[...new Set(names)];
       sel.innerHTML=uniq.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
       sel.value=uniq.includes(cur)?cur:(uniq.includes('openai')?'openai':uniq[0]);
-      store.set('aimodel',sel.value);
-      return true;
+      store.set('aimodel',sel.value);return true;
     }
   }catch(e){}
   sel.innerHTML=['openai','openai-large','mistral'].map(n=>'<option value="'+n+'">'+n+'</option>').join('');
@@ -887,8 +910,7 @@ function parseLabel(text){
   const m=t.match(/состав\s*[:\-]?\s*([\s\S]{15,1500}?)(?=пищевая|энергетическ|условия хранения|срок годности|хранить|изготовитель|гост|$)/i);
   if(m)ing=m[1].replace(/\n+/g,' ').trim();
   const grab=re=>{const x=t.match(re);if(!x)return undefined;const v=parseFloat(String(x[1]).replace(',','.'));return isFinite(v)?v:undefined};
-  const nut={};
-  const put=(k,v)=>{if(v!=null)nut[k]=v};
+  const nut={};const put=(k,v)=>{if(v!=null)nut[k]=v};
   put('sugars_100g',grab(/сахар\w*\s*[-–:]?\s*(\d+[.,]?\d*)\s*г/i));
   put('salt_100g',grab(/соль\s*[-–:]?\s*(\d+[.,]?\d*)\s*г/i));
   put('saturated-fat_100g',grab(/насыщенн\w*[\s\S]{0,25}?(\d+[.,]?\d*)\s*г/i));
@@ -924,7 +946,7 @@ function localExpert(p){
   const safe=(p.additives_tags||[]).map(lookupAdd).filter(x=>x&&x.s==='safe');
   if(safe.length)benefits.push('Безопасные добавки: '+safe.map(x=>x.n).join(', '));
   (p.additives_tags||[]).forEach(tag=>{const i=lookupAdd(tag);if(i&&i.s!=='safe')harms.push(i.code.toUpperCase()+' — '+i.n+': '+i.r)});
-  const unk=(p.additives_tags||[]).map((tag,i)=>lookupAdd(tag)?null:String(tag).split(':').pop().toUpperCase()).filter(Boolean);
+  const unk=(p.additives_tags||[]).map(tag=>lookupAdd(tag)?null:String(tag).split(':').pop().toUpperCase()).filter(Boolean);
   if(unk.length)harms.push('Неизвестные добавки: '+unk.join(', ')+' — оценка осторожная');
   if((nq('sugars_100g')||0)>=22.5)harms.push('Очень много сахара — '+nq('sugars_100g')+' г на 100 г');
   if((nq('salt_100g')||0)>=1.5)harms.push('Много соли — '+nq('salt_100g')+' г на 100 г');
@@ -975,12 +997,22 @@ function parseAiJson(text){
 }
 
 /* ===== СОСТОЯНИЕ ===== */
-let current=null,histFilter='all',scanner=null,scanning=false,busy=false,torchOn=false;
+let current=null,histFilter='all',scanner=null,scanning=false,busy=false,starting=false;
 let aiShots={front:null,ing:null,nut:null},aiBusy=false,aiCancel=false,selectMode=false,selected=new Set();
+let telTimer=null,lastText='',lastAt=0,macro=store.get('macro',false);
 const getHist=()=>store.get('hist',[]),getFavs=()=>store.get('favs',[]),getViews=()=>store.get('views',[]);
 function pushHist(b,p,s){let h=getHist().filter(x=>x.b!==b);
   h.unshift({b,name:p.product_name_ru||p.product_name||'Без названия',brand:p.brands||'',score:s.score,verdict:s.verdict,ts:Date.now(),ai:!!p._ai});
   store.set('hist',h.slice(0,150));renderRecent()}
+function seedDemo(){
+  if(store.get('seeded',false))return;
+  const s=[['3017620422003','Nutella','Ferrero',30,'avoid',2],
+    ['3229820019307',"Flocons d'avoine",'Bjorg',100,'buy',1],
+    ['5449000000996','Coca-Cola Original','Coca-Cola',30,'avoid',3],
+    ['5449000131805','Coca-Cola Zero Sugar','Coca-Cola',48,'neutral',4]];
+  store.set('hist',s.map(x=>({b:x[0],name:x[1],brand:x[2],score:x[3],verdict:x[4],ts:Date.now()-x[5]*864e5,ai:false,demo:true})));
+  store.set('seeded',true);
+}
 
 /* ===== НАВИГАЦИЯ ===== */
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -993,29 +1025,118 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showScreen(b.dataset.scr));
 $('backBtn').onclick=()=>showScreen('scan');
 
-/* ===== СКАНЕР ===== */
+/* ===== КАМЕРА: QR + ШТРИХКОДЫ + МАКРО ===== */
+function buildFormats(){
+  const F=Html5QrcodeSupportedFormats;
+  return [F.QR_CODE,F.DATA_MATRIX,F.AZTEC,F.PDF_417,F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39,F.ITF,F.CODABAR];
+}
+function qrboxFn(w,h){
+  if(!w||!h)return{width:260,height:260};
+  const side=Math.max(150,Math.floor(Math.min(w,h)*(macro?0.96:0.86)));
+  return{width:side,height:side};
+}
+function camError(msg){$('camErrorText').textContent=msg;$('cam-error').classList.remove('hidden');
+  $('telemetry').firstElementChild.textContent='камера не запущена'}
 async function startScanner(){
-  if(scanning)return;
-  if(typeof Html5Qrcode==='undefined'){$('cam-error').classList.remove('hidden');return}
+  if(scanning||starting)return;starting=true;
   try{
-    if(!scanner)scanner=new Html5Qrcode('reader',{verbose:false,
-      formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.QR_CODE],
-      experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
-    await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:160}},onScan,()=>{});
+    if(typeof Html5Qrcode==='undefined'){camError('Библиотека сканера не загрузилась. Проверь интернет и обнови страницу.');return}
+    if(scanner){try{await scanner.stop()}catch(e){}scanner=null;$('reader').innerHTML=''}
+    scanner=new Html5Qrcode('reader',{verbose:false,formatsToSupport:buildFormats(),
+      experimentalFeatures:{useBarCodeDetectorIfSupported:false}});
+    const vc={facingMode:{ideal:'environment'},width:{ideal:macro?1920:1280},height:{ideal:macro?1440:960}};
+    await scanner.start({facingMode:'environment'},{fps:macro?10:12,qrbox:qrboxFn,disableFlip:false,videoConstraints:vc},onDecoded,()=>{});
     scanning=true;$('cam-error').classList.add('hidden');
-    try{const caps=scanner.getRunningTrackCapabilities();if(caps&&caps.torch)$('torchBtn').classList.remove('hidden')}catch(e){}
-  }catch(e){$('cam-error').classList.remove('hidden')}}
-async function stopScanner(){$('torchBtn').classList.add('hidden');torchOn=false;
-  if(scanner&&scanning){try{await scanner.stop()}catch(e){}scanning=false}}
-function onScan(text){if(busy)return;const m=String(text).match(/\d{8,14}/);if(!m)return;
-  busy=true;buzz(80);beep();loadProduct(m[0])}
+    await applyMacro();updateMacroUI();startTelemetry();
+  }catch(e){camError('Не удалось включить камеру: '+String(e&&e.message||e)+'. Разреши доступ в браузере или введи код вручную.')}
+  finally{starting=false}
+}
+async function stopScanner(){
+  clearInterval(telTimer);telTimer=null;
+  if(scanner&&scanning){try{await scanner.stop()}catch(e){}scanning=false}
+  $('telemetry').firstElementChild.textContent='камера остановлена';
+}
+async function applyOne(c){try{await scanner.applyVideoConstraints({advanced:[c]});return true}catch(e){return false}}
+async function applyMacro(){
+  if(!scanning||!scanner)return;
+  let caps={};try{caps=scanner.getRunningTrackCapabilities()||{}}catch(e){}
+  const fm=caps.focusMode||[];
+  const want=macro?(fm.includes('manual')?'manual':fm.includes('single-shot')?'single-shot':'continuous'):'continuous';
+  if(fm.includes(want))await applyOne({focusMode:want});
+  if(macro&&caps.focusDistance){const d=caps.focusDistance;await applyOne({focusDistance:Number(d.min??0)})}
+  if(caps.zoom){const z=caps.zoom;const target=macro?Math.min(Number(z.max??2),2):Number(z.min??1);await applyOne({zoom:target})}
+  if(macro&&caps.torch)await applyOne({torch:true});
+  if(!macro&&caps.torch)await applyOne({torch:false});
+}
+function updateMacroUI(){
+  $('macroToggle').checked=macro;
+  const st=$('macroState');
+  st.classList.toggle('on',macro);
+  st.textContent=macro
+    ?'Макро включено: держи телефон в 5–10 см от кода, подсветка и приближение включаются автоматически, если камера их поддерживает.'
+    :'Обычный режим — этикетка на расстоянии 15–25 см. Для мелкого QR включи макросъёмку.';
+  updateTelemetry();
+}
+function startTelemetry(){clearInterval(telTimer);updateTelemetry();telTimer=setInterval(updateTelemetry,1200)}
+function updateTelemetry(){
+  if(!scanning)return;
+  let s={};try{s=scanner.getRunningTrackSettings()||{}}catch(e){}
+  const left=(s.width&&s.height)?(s.width+'×'+s.height):(macro?'запрошено 1920p':'запрошено 1280p');
+  const fps=s.frameRate?Math.round(s.frameRate)+' fps':(macro?10:12)+' к/с';
+  $('telemetry').firstElementChild.textContent=left+' · '+fps;
+  $('telemetry').lastElementChild.textContent=(macro?'🔬 макро':'обычный')+(s.zoom?' · '+Number(s.zoom).toFixed(1)+'×':'');
+}
+$('macroToggle').onchange=async e=>{
+  macro=e.target.checked;store.set('macro',macro);
+  beep(macro?740:460);buzz(30);updateMacroUI();
+  toast(macro?'Макросъёмка включена — поднеси телефон ближе':'Макросъёмка выключена');
+  await stopScanner();await startScanner();
+};
 $('camRetry').onclick=()=>startScanner();
-$('torchBtn').onclick=async()=>{try{torchOn=!torchOn;await scanner.applyVideoConstraints({advanced:[{torch:torchOn}]})}catch(e){toast('Фонарик не поддерживается')}};
-$('manualForm').onsubmit=e=>{e.preventDefault();const m=$('manualInput').value.match(/\d{8,14}/);
-  if(!m){toast('Введите 8–14 цифр штрихкода');return}$('manualInput').value='';loadProduct(m[0])};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopScanner();else if($('scr-scan').classList.contains('active'))startScanner()});
 
-/* ===== ЗАГРУЗКА ПРОДУКТА ===== */
+/* ===== РАСПОЗНАННЫЙ КОД ===== */
+function extractGtin(s){
+  let m=s.match(/(?:gtin|ean|barcode)\D{0,3}(\d{8,14})/i);if(m)return m[1];
+  m=s.match(/\/product\/(\d{8,14})/i);if(m)return m[1];
+  m=s.match(/01(\d{14})/);if(m){const g=m[1];return g.startsWith('0')?g.slice(1):g}
+  m=s.match(/\b(\d{13}|\d{12}|\d{8})\b/);if(m)return m[1];
+  m=s.match(/\d{8,14}/);return m?m[0]:null;
+}
+function onDecoded(text){
+  const raw=String(text||'').trim();if(!raw||busy)return;
+  if(raw===lastText&&Date.now()-lastAt<4000)return;
+  lastText=raw;lastAt=Date.now();
+  buzz(80);beep(880);
+  const gtin=extractGtin(raw);
+  if(gtin){busy=true;loadProduct(gtin);return}
+  openQrSheet(raw);
+}
+function openQrSheet(raw){
+  const isUrl=/^https?:\/\/\S+$/i.test(raw);
+  const name=raw.replace(/^https?:\/\//,'').slice(0,60);
+  $('sheetInner').innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="font-size:18px">✅ QR распознан</h2><button class="btn ghost sm" id="qrClose">✕</button></div>'+
+    '<div class="banner info">В коде нет штрихкода товара, поэтому оценку сразу посчитать нельзя. Выбери действие.</div>'+
+    '<pre class="ocr">'+esc(raw.slice(0,1200))+'</pre>'+
+    '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap">'+
+      (isUrl?'<a class="btn" style="flex:1;text-align:center;text-decoration:none" href="'+esc(raw)+'" target="_blank" rel="noopener">🔗 Открыть ссылку</a>':'')+
+      '<button class="btn ghost" id="qrCopy" style="flex:1">📋 Копировать</button>'+
+      '<button class="btn ai" id="qrAi" style="flex:1">📸 Разобрать состав</button>'+
+    '</div>'+
+    '<h3 class="sec" style="margin-top:16px">🛒 Найти этот товар в магазинах</h3>'+
+    '<div class="chips">'+storeLinksHtml(name,'')+'</div>'+
+    '<button class="btn ghost" id="qrResume" style="margin-top:14px">← Продолжить сканирование</button>';
+  $('sheet').classList.remove('hidden');
+  const close=()=>{$('sheet').classList.add('hidden');lastAt=0};
+  $('qrClose').onclick=close;$('qrResume').onclick=close;
+  $('qrCopy').onclick=async()=>{try{await navigator.clipboard.writeText(raw);toast('Скопировано')}catch(e){toast('Не удалось скопировать')}};
+  $('qrAi').onclick=()=>{close();showScreen('product');renderAiFallback('QR-'+Date.now().toString().slice(-8),{product_name:name})};
+}
+$('manualForm').onsubmit=e=>{e.preventDefault();const m=$('manualInput').value.match(/\d{8,14}/);
+  if(!m){toast('Введите 8–14 цифр штрихкода');return}$('manualInput').value='';busy=true;loadProduct(m[0])};
+
+/* ===== ПРОДУКТ ===== */
 async function loadProduct(b){
   showScreen('product');$('skeleton').classList.remove('hidden');$('productCard').classList.add('hidden');
   const mine=localGet(b);
@@ -1064,7 +1185,7 @@ function renderProduct(){
       list(ai.harms,'#E53935','−')+
       (Array.isArray(ai.check_on_label)&&ai.check_on_label.length?'<div class="banner info" style="margin-top:10px">👀 Проверь: '+esc(ai.check_on_label.join('; '))+'</div>':'')+
       (ai.notes?'<p class="fineprint" style="margin:10px 0 0">'+esc(ai.notes)+'</p>':'')+
-      '<p class="fineprint" style="margin:8px 0 0">Источник разбора: '+esc(ai.model||'')+'. Итоговый балл посчитан локальным движком по EFSA/ВОЗ. Сверяй вывод с этикеткой.</p>'+
+      '<p class="fineprint" style="margin:8px 0 0">Источник разбора: '+esc(ai.model||'')+'. Итоговый балл посчитан локальным движком по EFSA/ВОЗ.</p>'+
       (p._ocr?'<details><summary>Распознанный текст этикетки</summary><pre class="ocr">'+esc(p._ocr)+'</pre><button class="btn ghost sm" id="fixOcr" style="margin-top:10px">✏️ Исправить текст вручную</button></details>':'')+
       '</div>';
   }
@@ -1106,8 +1227,6 @@ function openSheet(code){const info=lookupAdd(code);if(!info)return;const meta=S
   $('sheetInner').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="font-size:18px">'+info.code.toUpperCase()+' — '+esc(info.n)+'</h2><button class="btn ghost sm" id="sheetClose">✕</button></div><span class="pill" style="background:'+meta.c+'">'+meta.t+'</span><p style="font-size:14px;line-height:1.55;margin:13px 0">'+esc(info.r)+'</p><a href="'+esc(info.src||SRC_EFSA)+'" target="_blank" rel="noopener" style="font-size:13px;color:var(--leaf)">Официальный источник ↗</a>';
   $('sheet').classList.remove('hidden');$('sheetClose').onclick=()=>$('sheet').classList.add('hidden')}
 $('sheet').onclick=e=>{if(e.target.id==='sheet')$('sheet').classList.add('hidden')};
-
-/* ===== АЛЬТЕРНАТИВЫ ===== */
 async function loadAlternatives(){
   if(!current)return;const box=$('alts');
   box.innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0" class="dots">Ищем варианты получше</p>';
@@ -1130,7 +1249,7 @@ function renderAiFallback(b,pre){
   aiShots={front:(pre&&pre._photo)||null,ing:null,nut:null};aiCancel=false;
   const mode=aiMode();
   c.innerHTML=
-  '<div class="card"><div class="prod-head"><div style="font-size:38px">📸</div><div><h2>'+(pre?'Улучшить разбор по фото':'Нет в Open Food Facts')+'</h2><p>Штрихкод '+esc(b)+'</p></div></div>'+
+  '<div class="card"><div class="prod-head"><div style="font-size:38px">📸</div><div><h2>'+(pre?'Улучшить разбор по фото':'Нет в Open Food Facts')+'</h2><p>Код '+esc(b)+'</p></div></div>'+
   '<div class="banner ai">Сделай 2–3 фото этикетки. Разбор без регистрации: свободная ИИ-модель, а если она недоступна — нейросетевой OCR и правила EFSA/ВОЗ прямо на телефоне.</div>'+
   '<h3 class="sec"><span class="step ai">1</span> Фото этикетки</h3>'+
   '<div class="grid2">'+shotBlock('front','📦 Название','Лицевая сторона: бренд и название')+shotBlock('ing','🧾 Состав','Раздел «Состав» — крупно, без бликов')+'</div>'+
@@ -1165,7 +1284,7 @@ async function runAi(b){
   const imgs=[aiShots.front,aiShots.ing,aiShots.nut].filter(Boolean);
   if(!imgs.length){toast('Сначала сделай фото этикетки');return}
   const mode=aiMode();aiBusy=true;aiCancel=false;updateAiBtn();
-  const prompt='Продукт со штрихкодом '+b+'. На фото лицевая сторона, состав и таблица пищевой ценности (порядок может отличаться). Извлеки название, бренд, категорию, полный состав, все E-добавки, нутриенты на 100 г, аллергены. Опиши полезные и вредные свойства состава. Верни только JSON по схеме.';
+  const prompt='Продукт с кодом '+b+'. На фото лицевая сторона, состав и таблица пищевой ценности (порядок может отличаться). Извлеки название, бренд, категорию, полный состав, все E-добавки, нутриенты на 100 г, аллергены. Опиши полезные и вредные свойства состава. Верни только JSON по схеме.';
   let ocrText='',engine='',json=null;
   try{
     if(mode!=='local'){
@@ -1174,7 +1293,7 @@ async function runAi(b){
     }
     if(!json){
       if(mode==='cloud'){
-        aiStatus('<div class="banner warn" style="margin-top:12px">ИИ-шлюз недоступен или лимит исчерпан. Переключись на «Только на телефоне» — работает без интернета и регистрации.</div>');
+        aiStatus('<div class="banner warn" style="margin-top:12px">ИИ-шлюз недоступен или лимит исчерпан. Переключись на «Только на телефоне».</div>');
         aiBusy=false;updateAiBtn();return;
       }
       aiProg(0,'Распознаю этикетку на телефоне');
@@ -1186,21 +1305,18 @@ async function runAi(b){
       if(aiCancel){aiBusy=false;updateAiBtn();return}
       const info=parseLabel(ocrText);
       if(!info.ing&&!Object.keys(info.nut).length&&!info.adds.length){
-        aiStatus('<div class="banner warn" style="margin-top:12px">Этикетка не читается. Пересними состав крупнее, при ровном свете, без бликов — или введи вручную.</div><pre class="ocr">'+esc(ocrText.slice(0,1200))+'</pre>');
+        aiStatus('<div class="banner warn" style="margin-top:12px">Этикетка не читается. Пересними состав крупнее, при ровном свете, без бликов.</div><pre class="ocr">'+esc(ocrText.slice(0,1200))+'</pre>');
         aiBusy=false;updateAiBtn();return;
       }
       if(mode==='auto'&&ocrText.length>40){
         aiStatus('<div class="banner info dots" style="margin-top:12px">ИИ разбирает распознанный текст</div>');
-        try{
-          const tp='Штрихкод '+b+'. Текст этикетки:\n'+ocrText.slice(0,2500)+'\n\nВерни только JSON по схеме.';
-          const t=await aiText(tp);json=parseAiJson(t);engine='cloud';
-        }catch(e){json=null}
+        try{const tp='Код '+b+'. Текст этикетки:\n'+ocrText.slice(0,2500)+'\n\nВерни только JSON по схеме.';
+          const t=await aiText(tp);json=parseAiJson(t);engine='cloud'}catch(e){json=null}
       }
       if(!json){const p=buildFromOcr(b,info,aiShots.front,ocrText);return finishAi(b,p,'local')}
       const p=buildFromAi(b,json,aiShots.front,ocrText,engine||'cloud');
       if(!p.ingredients.length&&!Object.keys(p.nutriments).length){
-        const p2=buildFromOcr(b,info,aiShots.front,ocrText);return finishAi(b,p2,'local');
-      }
+        const p2=buildFromOcr(b,info,aiShots.front,ocrText);return finishAi(b,p2,'local')}
       return finishAi(b,p,engine||'cloud');
     }
     const p=buildFromAi(b,json,aiShots.front,'',engine);
@@ -1210,7 +1326,7 @@ async function runAi(b){
     }
     finishAi(b,p,engine);
   }catch(err){
-    aiStatus('<div class="banner red" style="margin-top:12px">Не удалось разобрать: '+esc(String(err&&err.message||err))+'. Попробуй «Только на телефоне» или введи состав вручную.</div>');
+    aiStatus('<div class="banner red" style="margin-top:12px">Не удалось разобрать: '+esc(String(err&&err.message||err))+'</div>');
     aiBusy=false;updateAiBtn();
   }
 }
@@ -1271,10 +1387,10 @@ function renderManual(b,pre){
 function renderRecent(){
   $('recent').innerHTML=getHist().slice(0,4).map(h=>'<div class="chip" data-open="'+esc(h.b)+'"><span class="dot" style="background:'+getColorForScore(h.score)+'"></span>'+esc(h.name.slice(0,20))+'</div>').join('');
 }
-$('recent').addEventListener('click',e=>{const c=e.target.closest('[data-open]');if(c)loadProduct(c.dataset.open)});
+$('recent').addEventListener('click',e=>{const c=e.target.closest('[data-open]');if(c){busy=true;loadProduct(c.dataset.open)}});
 const EXAMPLES=[['3017620422003','Nutella'],['3229820019307','Овсянка'],['5449000000996','Coca-Cola'],['5449000131805','Cola Zero']];
 $('examples').innerHTML=EXAMPLES.map(([b,n])=>'<div class="chip" data-open="'+b+'"><span class="dot" style="background:var(--leaf)"></span>'+n+'</div>').join('');
-$('examples').addEventListener('click',e=>{const c=e.target.closest('[data-open]');if(c)loadProduct(c.dataset.open)});
+$('examples').addEventListener('click',e=>{const c=e.target.closest('[data-open]');if(c){busy=true;loadProduct(c.dataset.open)}});
 function currentList(){
   const q=($('histSearch').value||'').toLowerCase(),favs=getFavs(),sort=$('histSort').value;
   let h=getHist();
@@ -1291,7 +1407,7 @@ function renderHist(){
   $('bulkDel').textContent='Удалить выбранные ('+selected.size+')';
   $('histList').innerHTML=h.length?h.map(x=>'<div class="hist-item'+(selected.has(x.b)?' sel':'')+'" data-b="'+esc(x.b)+'">'+
     (selectMode?'<input type="checkbox" data-check="'+esc(x.b)+'"'+(selected.has(x.b)?' checked':'')+'>':'<span class="dot" style="background:'+getColorForScore(x.score)+';width:14px;height:14px;flex-basis:14px"></span>')+
-    '<div class="nm"><b>'+(favs.includes(x.b)?'⭐ ':'')+(x.ai?'🤖 ':'')+esc(x.name)+'</b><i>'+esc(x.brand)+' · '+new Date(x.ts).toLocaleDateString('ru-RU')+'</i></div>'+
+    '<div class="nm"><b>'+(favs.includes(x.b)?'⭐ ':'')+(x.ai?'🤖 ':'')+esc(x.name)+'</b><i>'+esc(x.brand)+' · '+new Date(x.ts).toLocaleDateString('ru-RU')+(x.demo?' · демо':'')+'</i></div>'+
     '<span class="pill" style="background:'+getColorForScore(x.score)+';color:'+contrastText(getColorForScore(x.score))+'">'+vIcon(x.score)+' '+x.score+'</span>'+
     (selectMode?'':'<button class="del" data-del="'+esc(x.b)+'">✕</button>')+'</div>').join(''):'<p style="color:var(--muted);text-align:center;padding:30px 0;font-size:14px">Пусто. Отсканируй первый продукт 📷</p>';
 }
@@ -1303,7 +1419,7 @@ $('histList').addEventListener('click',e=>{
     store.set('hist',h.filter(x=>x.b!==b));renderHist();renderRecent();
     toast('Удалено из истории','Отменить',()=>{if(item){store.set('hist',[item,...getHist()].slice(0,150));renderHist();renderRecent()}});return}
   if(selectMode){const row=e.target.closest('[data-b]');if(row){const b=row.dataset.b;if(selected.has(b))selected.delete(b);else selected.add(b);renderHist()}return}
-  const item=e.target.closest('[data-b]');if(item)loadProduct(item.dataset.b)});
+  const item=e.target.closest('[data-b]');if(item){busy=true;loadProduct(item.dataset.b)}});
 $('selBtn').onclick=()=>{selectMode=!selectMode;selected.clear();renderHist()};
 $('bulkCancel').onclick=()=>{selectMode=false;selected.clear();renderHist()};
 $('bulkDel').onclick=()=>{
@@ -1335,14 +1451,14 @@ $('saveViewBtn').onclick=()=>{
   const v=getViews();v.push({name:name.slice(0,28),f:histFilter,sort:$('histSort').value,q:$('histSearch').value});
   store.set('views',v.slice(0,8));renderViews();toast('Вид сохранён')};
 
-/* ===== СПРАВОЧНИК ДОБАВОК ===== */
+/* ===== СПРАВОЧНИК ===== */
 function renderAddResults(){
   const q=($('addSearch').value||'').trim().toLowerCase();
   const keys=Object.keys(ADD);
   const found=(q?keys.filter(k=>k.includes(q)||ADD[k].n.toLowerCase().includes(q)):keys).slice(0,40);
   $('addResults').innerHTML=found.length?found.map(k=>{const m=ST_META[ADD[k].s];
     return'<span class="chip" data-add="'+k+'" style="border-color:'+m.c+';color:'+m.c+';cursor:pointer">'+k.toUpperCase()+' · '+esc(ADD[k].n)+'</span>'}).join(''):'<span class="fineprint" style="margin:0">Ничего не найдено</span>';
-  $('dictInfo').textContent='Словарь: '+keys.length+' добавок · '+RU_ADD.length+' русских и латинских названий для распознавания состава.';
+  $('dictInfo').textContent='Словарь: '+keys.length+' добавок · '+RU_ADD.length+' названий для распознавания состава.';
 }
 $('addSearch').oninput=renderAddResults;
 $('addResults').addEventListener('click',e=>{const c=e.target.closest('[data-add]');if(c)openSheet(c.dataset.add)});
@@ -1359,19 +1475,21 @@ $('aiModel').onchange=e=>{store.set('aimodel',e.target.value);toast('Модел�
 $('reloadModels').onclick=async()=>{const ok=await loadModels();toast(ok?'Список моделей обновлён':'Шлюз недоступен — оставлены базовые модели')};
 $('allergList').addEventListener('change',()=>{store.set('allerg',[...document.querySelectorAll('#allergList input:checked')].map(i=>i.dataset.tag));toast('Сохранено')});
 $('dietList').addEventListener('change',()=>{const d={};document.querySelectorAll('#dietList input').forEach(i=>d[i.dataset.diet]=i.checked);store.set('diet',d);toast('Сохранено')});
-$('expBtn').onclick=()=>{const data={hist:getHist(),favs:getFavs(),local:store.get('local',{}),exp:store.get('exp',{}),allerg:store.get('allerg',[]),diet:store.get('diet',{}),views:getViews()};
+$('expBtn').onclick=()=>{const data={hist:getHist(),favs:getFavs(),local:store.get('local',{}),exp:store.get('exp',{}),allerg:store.get('allerg',[]),diet:store.get('diet',{}),views:getViews(),macro:macro};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download='food-scanner-data.json';a.click();URL.revokeObjectURL(a.href);toast('Файл скачан')};
 $('impFile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const d=JSON.parse(r.result);['hist','favs','local','exp','allerg','diet','views'].forEach(k=>{if(d[k]!==undefined)store.set(k,d[k])});
-    renderSettings();renderRecent();renderViews();toast('Данные загружены')}catch(err){toast('Файл повреждён')}};r.readAsText(f)};
+  r.onload=()=>{try{const d=JSON.parse(r.result);['hist','favs','local','exp','allerg','diet','views','macro'].forEach(k=>{if(d[k]!==undefined)store.set(k,d[k])});
+    macro=store.get('macro',false);renderSettings();renderRecent();renderViews();updateMacroUI();toast('Данные загружены')}catch(err){toast('Файл повреждён')}};r.readAsText(f)};
+$('dropDemo').onclick=()=>{const snap=getHist();store.set('hist',snap.filter(x=>!x.demo));renderHist();renderRecent();
+  toast('Демо-записи убраны','Отменить',()=>{store.set('hist',snap);renderHist();renderRecent()})};
 $('clearHist').onclick=()=>{const snap=getHist();store.set('hist',[]);store.set('favs',[]);renderRecent();renderHist();
   toast('История очищена','Отменить',()=>{store.set('hist',snap);renderRecent();renderHist()})};
 $('clearCache').onclick=()=>{store.set('cache',{});store.set('local',{});toast('Кэш и разобранные товары очищены')};
 
 /* ===== СТАРТ ===== */
 applyTheme();$('soundBtn').textContent=soundOn?'🔊':'🔇';
-renderRecent();renderSettings();renderViews();renderAddResults();showScreen('scan');
+seedDemo();renderRecent();renderSettings();renderViews();renderAddResults();updateMacroUI();showScreen('scan');
 </script>
 </body>
 </html>
